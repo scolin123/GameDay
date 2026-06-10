@@ -1,0 +1,107 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group {
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.groupLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.btn {
+  padding: 6px 10px;
+  background: var(--bg-surface);
+  border: none;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: var(--bg-elevated);
+}
+
+/* Ball group — blue selected */
+.ball .btn.selected,
+.ballBtn.selected {
+  background: #2563eb;
+  color: white;
+}
+
+/* Strike group — red selected */
+.strike .btn.selected,
+.strikeBtn.selected {
+  background: #dc2626;
+  color: white;
+}
+
+/* Hit group — green selected */
+.hit .btn.selected,
+.hitBtn.selected {
+  background: #16a34a;
+  color: white;
+}
+
+/* Out group — slate selected */
+.out .btn.selected,
+.outBtn.selected {
+  background: #475569;
+  color: white;
+}
+
+.ball {
+  border-color: #2563eb;
+}
+
+.ball .groupLabel {
+  color: #2563eb;
+  border-bottom-color: #bfdbfe;
+}
+
+.strike {
+  border-color: #dc2626;
+}
+
+.strike .groupLabel {
+  color: #dc2626;
+  border-bottom-color: #fecaca;
+}
+
+.hit {
+  border-color: #16a34a;
+}
+
+.hit .groupLabel {
+  color: #16a34a;
+  border-bottom-color: #bbf7d0;
+}
+
+.out {
+  border-color: #475569;
+}
+
+.out .groupLabel {
+  color: #475569;
+  border-bottom-color: #e2e8f0;
+}

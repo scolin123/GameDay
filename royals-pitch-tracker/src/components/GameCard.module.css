@@ -1,0 +1,53 @@
+.row {
+  border-bottom: 1px solid var(--border);
+}
+
+.row:hover {
+  background: var(--accent-subtle);
+}
+
+.row td {
+  padding: 0 16px;
+  height: 40px;
+  vertical-align: middle;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.date {
+  white-space: nowrap;
+  color: var(--text-secondary) !important;
+  font-size: 13px !important;
+}
+
+.matchup {
+  font-weight: 500;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-secondary) !important;
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actionBtn {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  margin-left: 6px;
+  text-decoration: none;
+}
+
+.actionBtn:hover {
+  background: var(--bg-elevated);
+}

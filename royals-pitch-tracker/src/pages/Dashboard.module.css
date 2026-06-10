@@ -1,0 +1,112 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg-base);
+}
+
+.nav {
+  background: var(--bg-nav);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 48px;
+}
+
+.navBrand {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.navEmail {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.signOut {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.signOut:hover {
+  color: white;
+}
+
+.content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.newGameBtn {
+  padding: 7px 16px;
+  background: var(--accent);
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.newGameBtn:hover {
+  background: var(--accent-hover);
+  color: white;
+}
+
+.loading,
+.empty {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.tableWrap {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead tr {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.table th {
+  padding: 0 16px;
+  height: 36px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.numHeader {
+  text-align: right;
+}
+
+.actionsHeader {
+  text-align: right;
+}

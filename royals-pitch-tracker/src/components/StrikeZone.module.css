@@ -1,0 +1,9 @@
+.svg {
+  display: block;
+  cursor: crosshair;
+  border: 1px solid var(--border);
+  /* Fill available viewport height; width scales with aspect ratio */
+  height: calc(100vh - 210px);
+  width: auto;
+  max-width: 100%;
+}

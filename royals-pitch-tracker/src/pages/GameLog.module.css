@@ -1,0 +1,236 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+}
+
+.nav {
+  background: var(--bg-nav);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  height: 48px;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.backLink {
+  color: #94a3b8;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.backLink:hover {
+  color: white;
+}
+
+.gameTitle {
+  flex: 1;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exportBtn {
+  padding: 5px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.exportBtn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+}
+
+.exportBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.content {
+  padding: 24px;
+  flex: 1;
+}
+
+.content h1 {
+  margin-bottom: 20px;
+}
+
+.loading,
+.empty {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+}
+
+.headerRow {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.th {
+  padding: 0 10px;
+  height: 36px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.row {
+  border-bottom: 1px solid var(--border);
+}
+
+.row:hover {
+  background: var(--accent-subtle);
+}
+
+.editRow {
+  background: #fefce8;
+  border-bottom: 1px solid var(--border);
+}
+
+.cell {
+  padding: 0 10px;
+  height: 40px;
+  font-size: 12px;
+  color: var(--text-primary);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.emptyCell {
+  color: var(--text-muted);
+}
+
+.staticCell {
+  color: var(--text-secondary);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Inline edit inputs */
+.editInput {
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  outline: none;
+  width: 100%;
+  min-width: 60px;
+  max-width: 160px;
+}
+
+.editInput:focus {
+  border-color: var(--accent);
+}
+
+.editSelect {
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.editSelect:focus {
+  border-color: var(--accent);
+}
+
+/* Action buttons */
+.actionCell {
+  display: flex;
+  gap: 4px;
+}
+
+.editBtn {
+  padding: 3px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.editBtn:hover {
+  background: var(--bg-elevated);
+}
+
+.saveBtn {
+  padding: 3px 8px;
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  color: white;
+  cursor: pointer;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelBtn {
+  padding: 3px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: var(--bg-elevated);
+}
+
+.rowError {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--color-danger);
+  background: #fef2f2;
+  border-bottom: 1px solid var(--border);
+}

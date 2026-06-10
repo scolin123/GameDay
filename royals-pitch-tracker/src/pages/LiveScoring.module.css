@@ -1,0 +1,790 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+}
+
+.nav {
+  background: var(--bg-nav);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.navBrand {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  margin-right: auto;
+}
+
+.navGame {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.signOut {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.signOut:hover {
+  color: white;
+}
+
+.loading {
+  padding: 32px 24px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Three-column layout */
+.columns {
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  gap: 0;
+  flex: 1;
+  min-width: 1024px;
+  height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+.leftCol {
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  background: var(--bg-surface);
+  padding: 0;
+}
+
+.centerCol {
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg-base);
+}
+
+.rightCol {
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  background: var(--bg-surface);
+  padding: 0;
+}
+
+/* Sections in side columns */
+.section {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+/* Scoreboard */
+.halfInningDisplay {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.halfLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.inningNum {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.outsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-width: 32px;
+}
+
+.outsDots {
+  display: flex;
+  gap: 5px;
+}
+
+.outDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  background: transparent;
+  display: block;
+}
+
+.outDotFilled {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.countDisplay {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.countNum {
+  font-size: 32px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.countLabel {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Diamond */
+.diamondWrap {
+  display: flex;
+  justify-content: center;
+}
+
+/* Matchup */
+.matchupRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.matchupRole {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-width: 44px;
+}
+
+.matchupName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.matchupInput {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-strong);
+  outline: none;
+  padding: 2px 4px;
+  min-width: 0;
+}
+
+.matchupInput:focus {
+  border-bottom-color: var(--accent);
+}
+
+.matchupInput::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.secondaryBtn {
+  margin-top: 8px;
+  padding: 5px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.secondaryBtn:hover {
+  background: var(--bg-elevated);
+}
+
+/* Recent pitches */
+.recentPitch,
+.atBatPitch {
+  display: grid;
+  grid-template-columns: 28px 28px 1fr auto;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+
+.atBatPitch {
+  grid-template-columns: 20px 28px 1fr;
+}
+
+.recentPitch:last-of-type,
+.atBatPitch:last-of-type {
+  border-bottom: none;
+}
+
+.pitchNum {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pitchType {
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.pitchOutcome {
+  font-size: 12px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pitchCount {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.undoBtn {
+  margin-top: 10px;
+  padding: 5px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  width: 100%;
+}
+
+.undoBtn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+}
+
+.undoBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.emptyText {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Strike zone field */
+.zoneField {}
+
+/* Center column */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.buttonGroup {
+  display: flex;
+}
+
+.segBtn {
+  flex: 1;
+  padding: 6px 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-left: -1px;
+}
+
+.segBtn:first-child {
+  border-radius: 4px 0 0 4px;
+  margin-left: 0;
+}
+
+.segBtn:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.segBtnActive {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  z-index: 1;
+}
+
+.numberInput {
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 14px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  outline: none;
+  max-width: 120px;
+  font-variant-numeric: tabular-nums;
+}
+
+.numberInput:focus {
+  border-color: var(--accent);
+}
+
+.textarea {
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-size: 13px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  outline: none;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.textarea:focus {
+  border-color: var(--accent);
+}
+
+/* Pitch button */
+.pitchBtn {
+  padding: 10px 16px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
+.pitchBtn:hover {
+  background: var(--accent-hover);
+}
+
+/* Outcome modal */
+.outcomeModal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  width: 360px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.outcomeModalHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pitchTypeHint {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 12px 0 4px;
+  text-align: center;
+}
+
+.outcomeModalTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.backBtn {
+  padding: 3px 8px;
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.backBtn:hover {
+  background: var(--bg-elevated);
+}
+
+.outcomeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.outcomeSection:last-of-type {
+  border-bottom: none;
+}
+
+.outcomeSectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-bottom: 3px;
+}
+
+.ballLabel {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.strikeLabel {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.hitLabel {
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+.outLabelStyle {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+/* Full-width vertical outcome buttons */
+.outcomeRowBtn {
+  display: block;
+  width: 100%;
+  padding: 9px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.outcomeRowBtn:hover {
+  background: var(--bg-elevated);
+}
+
+/* Ball outcomes */
+.ballBtnSelected {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+/* Strike outcomes */
+.strikeBtnSelected {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+/* Hit outcomes */
+.hitRowBtn {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.hitBtnSelected {
+  background: #16a34a;
+  color: white;
+  border-color: #16a34a;
+}
+
+/* Out outcomes */
+.outRowBtn {
+  border-color: #475569;
+  color: #475569;
+}
+
+.outBtnSelected {
+  background: #475569;
+  color: white;
+  border-color: #475569;
+}
+
+/* Ball in Play expander */
+.ballInPlayBtn {
+  display: block;
+  width: 100%;
+  padding: 9px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.ballInPlayBtn:hover {
+  background: var(--border);
+}
+
+.undoModalBtn {
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.undoModalBtn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+}
+
+.undoModalBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.overlayActions {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: var(--bg-elevated);
+}
+
+.submitBtn {
+  flex: 1;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.submitBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Right column */
+.lineupRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.lineupRow:last-child {
+  border-bottom: none;
+}
+
+.lineupRowActive {
+  background: var(--accent-subtle);
+  margin: 0 -14px;
+  padding: 5px 14px;
+}
+
+.lineupOrder {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  min-width: 16px;
+  font-size: 11px;
+}
+
+.lineupName {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineupSide {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.pitcherStats {
+  display: flex;
+  gap: 12px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.statValue {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.statName {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Modals */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.flipModal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  width: 400px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.flipModal h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.flipText {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.flipField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.select {
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 14px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  outline: none;
+  max-width: 120px;
+}
+
+.select:focus {
+  border-color: var(--accent);
+}
+
+.flipActions {
+  display: flex;
+  gap: 8px;
+}
+
+.primaryBtn {
+  padding: 7px 16px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.primaryBtn:hover {
+  background: var(--accent-hover);
+}
