@@ -46,6 +46,14 @@
   margin-bottom: 24px;
 }
 
+.optional {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .form {
   max-width: 480px;
   display: flex;
@@ -135,6 +143,37 @@
   cursor: not-allowed;
 }
 
+/* Roster tab bar */
+.rosterTabBar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabBtn {
+  padding: 7px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.1s;
+  font-family: 'IBM Plex Sans', sans-serif;
+  margin-bottom: -1px;
+}
+
+.tabBtn:hover {
+  color: var(--text-primary);
+}
+
+.tabBtnActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
 /* Roster builder */
 .rosterColumns {
   display: grid;
@@ -175,9 +214,55 @@
   color: var(--text-muted);
 }
 
+.rosterHeaderBatters {
+  display: grid;
+  grid-template-columns: 1fr 50px 50px 24px;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.rosterHeaderPitchers {
+  display: grid;
+  grid-template-columns: 1fr 60px 24px;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .rosterRow {
   display: grid;
   grid-template-columns: 1fr 80px 50px 60px 50px 24px;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+
+.rosterRowBatters {
+  display: grid;
+  grid-template-columns: 1fr 50px 50px 24px;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+
+.rosterRowPitchers {
+  display: grid;
+  grid-template-columns: 1fr 60px 24px;
   gap: 6px;
   padding: 6px 10px;
   border-bottom: 1px solid var(--border);

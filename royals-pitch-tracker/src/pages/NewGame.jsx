@@ -3,84 +3,70 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import styles from './NewGame.module.css';
 
-const EMPTY_PLAYER = () => ({
-  player_name: '',
-  player_role: 'Batter',
-  bats: '',
-  throws: '',
-  batting_order: '',
-});
+const EMPTY_BATTER = () => ({ player_name: '', player_role: 'Batter', bats: '', throws: '', batting_order: '' });
+const EMPTY_PITCHER = () => ({ player_name: '', player_role: 'Pitcher', bats: '', throws: '', batting_order: '' });
 
-function RosterPanel({ team, label, players, onChange, onAdd, onRemove }) {
+function RosterPanel({ team, label, players, tab, onChange, onAdd, onRemove }) {
+  const batters = players.filter((p) => p.player_role === 'Batter');
+  const pitchers = players.filter((p) => p.player_role === 'Pitcher');
+  const shown = tab === 'batters' ? batters : pitchers;
+  // Map shown index back to original players index
+  const shownIndices = players.reduce((acc, p, i) => {
+    const role = tab === 'batters' ? 'Batter' : 'Pitcher';
+    if (p.player_role === role) acc.push(i);
+    return acc;
+  }, []);
+
   return (
     <div className={styles.rosterPanel}>
       <h2 className={styles.teamHeading}>{label}</h2>
-      <div className={styles.rosterTable}>
-        <div className={styles.rosterHeader}>
-          <span>Name</span>
-          <span>Role</span>
-          <span>Bats</span>
-          <span>Throws</span>
-          <span>Order</span>
-          <span></span>
-        </div>
-        {players.map((p, i) => (
-          <div key={i} className={styles.rosterRow}>
-            <input
-              className={styles.input}
-              placeholder="Player name"
-              value={p.player_name}
-              onChange={(e) => onChange(team, i, 'player_name', e.target.value)}
-            />
-            <select
-              className={styles.select}
-              value={p.player_role}
-              onChange={(e) => onChange(team, i, 'player_role', e.target.value)}
-            >
-              <option value="Batter">Batter</option>
-              <option value="Pitcher">Pitcher</option>
-              <option value="Both">Both</option>
-            </select>
-            <select
-              className={styles.select}
-              value={p.bats}
-              onChange={(e) => onChange(team, i, 'bats', e.target.value)}
-            >
-              <option value="">—</option>
-              <option value="L">L</option>
-              <option value="R">R</option>
-              <option value="S">S</option>
-            </select>
-            <select
-              className={styles.select}
-              value={p.throws}
-              onChange={(e) => onChange(team, i, 'throws', e.target.value)}
-            >
-              <option value="">—</option>
-              <option value="L">L</option>
-              <option value="R">R</option>
-            </select>
-            <input
-              className={styles.orderInput}
-              type="number"
-              min="1"
-              max="9"
-              placeholder="—"
-              value={p.batting_order}
-              onChange={(e) => onChange(team, i, 'batting_order', e.target.value)}
-            />
-            <button
-              type="button"
-              className={styles.removeBtn}
-              onClick={() => onRemove(team, i)}
-            >
-              x
-            </button>
+      {shown.length > 0 && (
+        <div className={styles.rosterTable}>
+          <div className={tab === 'batters' ? styles.rosterHeaderBatters : styles.rosterHeaderPitchers}>
+            <span>Name</span>
+            {tab === 'batters' ? <><span>Bats</span><span>Order</span></> : <span>Throws</span>}
+            <span></span>
           </div>
-        ))}
-      </div>
-      <button type="button" className={styles.addPlayerBtn} onClick={() => onAdd(team)}>
-        Add Player
+          {shown.map((p, si) => {
+            const i = shownIndices[si];
+            return (
+              <div key={i} className={tab === 'batters' ? styles.rosterRowBatters : styles.rosterRowPitchers}>
+                <input
+                  className={styles.input}
+                  placeholder="Player name"
+                  value={p.player_name}
+                  onChange={(e) => onChange(team, i, 'player_name', e.target.value)}
+                />
+                {tab === 'batters' ? (
+                  <>
+                    <select className={styles.select} value={p.bats}
+                      onChange={(e) => onChange(team, i, 'bats', e.target.value)}>
+                      <option value="">—</option>
+                      <option value="L">L</option>
+                      <option value="R">R</option>
+                      <option value="S">S</option>
+                    </select>
+                    <input className={styles.orderInput} type="number" min="1" max="9"
+                      placeholder="—" value={p.batting_order}
+                      onChange={(e) => onChange(team, i, 'batting_order', e.target.value)} />
+                  </>
+                ) : (
+                  <select className={styles.select} value={p.throws}
+                    onChange={(e) => onChange(team, i, 'throws', e.target.value)}>
+                    <option value="">—</option>
+                    <option value="L">L</option>
+                    <option value="R">R</option>
+                  </select>
+                )}
+                <button type="button" className={styles.removeBtn} onClick={() => onRemove(team, i)}>x</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <button type="button" className={styles.addPlayerBtn}
+        onClick={() => onAdd(team, tab === 'batters' ? 'Batter' : 'Pitcher')}>
+        {tab === 'batters' ? 'Add Batter' : 'Add Pitcher'}
       </button>
     </div>
   );
@@ -99,9 +85,11 @@ export default function NewGame() {
   const [loading, setLoading] = useState(false);
 
   const [rosters, setRosters] = useState({
-    home: [EMPTY_PLAYER()],
-    away: [EMPTY_PLAYER()],
+    home: [EMPTY_BATTER()],
+    away: [EMPTY_BATTER()],
   });
+
+  const [newGameTab, setNewGameTab] = useState('batters');
 
   function handleGameInfoChange(field, value) {
     setGameInfo((g) => ({ ...g, [field]: value }));
@@ -139,8 +127,9 @@ export default function NewGame() {
     });
   }
 
-  function handleAddPlayer(team) {
-    setRosters((r) => ({ ...r, [team]: [...r[team], EMPTY_PLAYER()] }));
+  function handleAddPlayer(team, role) {
+    const empty = role === 'Pitcher' ? EMPTY_PITCHER() : EMPTY_BATTER();
+    setRosters((r) => ({ ...r, [team]: [...r[team], empty] }));
   }
 
   function handleRemovePlayer(team, index) {
@@ -150,33 +139,9 @@ export default function NewGame() {
     });
   }
 
-  function validate() {
-    const checkTeam = (team, label) => {
-      const players = rosters[team];
-      const hasBatter = players.some((p) =>
-        (p.player_role === 'Batter' || p.player_role === 'Both') && p.player_name.trim()
-      );
-      const hasPitcher = players.some((p) =>
-        (p.player_role === 'Pitcher' || p.player_role === 'Both') && p.player_name.trim()
-      );
-      if (!hasBatter) return `${label} needs at least one batter.`;
-      if (!hasPitcher) return `${label} needs at least one pitcher.`;
-      return null;
-    };
-    return (
-      checkTeam('home', gameInfo.home_team || 'Home team') ||
-      checkTeam('away', gameInfo.away_team || 'Away team')
-    );
-  }
-
   async function handleStartGame(e) {
     e.preventDefault();
     setError('');
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
     setLoading(true);
 
     const allPlayers = [
@@ -204,11 +169,13 @@ export default function NewGame() {
         })),
     ];
 
-    const { error: err } = await supabase.from('rosters').insert(allPlayers);
-    if (err) {
-      setError(err.message);
-      setLoading(false);
-      return;
+    if (allPlayers.length > 0) {
+      const { error: err } = await supabase.from('rosters').insert(allPlayers);
+      if (err) {
+        setError(err.message);
+        setLoading(false);
+        return;
+      }
     }
     navigate(`/games/${gameId}/live`);
   }
@@ -272,14 +239,23 @@ export default function NewGame() {
 
         {step === 2 && (
           <>
-            <h1>Build Roster</h1>
-            <p className={styles.stepInfo}>{gameInfo.away_team} @ {gameInfo.home_team}</p>
+            <h1>Build Roster <span className={styles.optional}>(optional)</span></h1>
+            <p className={styles.stepInfo}>{gameInfo.away_team} @ {gameInfo.home_team} — you can add players during the game too</p>
+            <div className={styles.rosterTabBar}>
+              <button type="button"
+                className={`${styles.tabBtn} ${newGameTab === 'batters' ? styles.tabBtnActive : ''}`}
+                onClick={() => setNewGameTab('batters')}>Batters</button>
+              <button type="button"
+                className={`${styles.tabBtn} ${newGameTab === 'pitchers' ? styles.tabBtnActive : ''}`}
+                onClick={() => setNewGameTab('pitchers')}>Pitchers</button>
+            </div>
             <form onSubmit={handleStartGame}>
               <div className={styles.rosterColumns}>
                 <RosterPanel
                   team="home"
                   label={gameInfo.home_team}
                   players={rosters.home}
+                  tab={newGameTab}
                   onChange={handlePlayerChange}
                   onAdd={handleAddPlayer}
                   onRemove={handleRemovePlayer}
@@ -288,6 +264,7 @@ export default function NewGame() {
                   team="away"
                   label={gameInfo.away_team}
                   players={rosters.away}
+                  tab={newGameTab}
                   onChange={handlePlayerChange}
                   onAdd={handleAddPlayer}
                   onRemove={handleRemovePlayer}

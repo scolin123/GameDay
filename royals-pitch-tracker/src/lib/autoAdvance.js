@@ -1,24 +1,28 @@
 export const PA_ENDING_OUTCOMES = new Set([
-  'Walk', 'Hit By Pitch',
+  'Walk', 'Intentional Walk', 'Hit By Pitch', 'Catcher Interference',
   'Single', 'Double', 'Triple', 'Home Run',
-  'Groundout', 'Flyout', 'Lineout',
+  'Groundout', 'Flyout', 'Lineout', 'Popout',
   'Strikeout Swinging', 'Strikeout Looking',
+  'Dropped Third Strike Swinging', 'Dropped Third Strike Looking',
   'Sacrifice Fly', 'Sacrifice Bunt',
-  'Double Play', "Fielder's Choice", 'Error',
+  'Double Play', 'Triple Play', "Fielder's Choice", 'Error',
+  'Batter Interference',
 ]);
 
 export const OUT_OUTCOMES = new Set([
-  'Groundout', 'Flyout', 'Lineout',
+  'Groundout', 'Flyout', 'Lineout', 'Popout',
   'Strikeout Swinging', 'Strikeout Looking',
   'Sacrifice Fly', 'Sacrifice Bunt',
-  "Fielder's Choice", 'Error',
+  "Fielder's Choice",
+  'Batter Interference',
 ]);
 
 export const IN_PLAY_OUTCOMES = new Set([
   'Single', 'Double', 'Triple', 'Home Run',
-  'Groundout', 'Flyout', 'Lineout',
+  'Groundout', 'Flyout', 'Lineout', 'Popout',
   'Sacrifice Fly', 'Sacrifice Bunt',
-  'Double Play', "Fielder's Choice", 'Error',
+  'Double Play', 'Triple Play', "Fielder's Choice", 'Error',
+  'Batter Interference',
 ]);
 
 /**
@@ -30,10 +34,10 @@ export function advanceCount(balls, strikes, outcome) {
     if (newBalls >= 4) return { balls: 0, strikes: 0, paEnded: true, outsAdded: 0 };
     return { balls: newBalls, strikes, paEnded: false, outsAdded: 0 };
   }
-  if (outcome === 'Walk') {
+  if (outcome === 'Walk' || outcome === 'Intentional Walk') {
     return { balls: 0, strikes: 0, paEnded: true, outsAdded: 0 };
   }
-  if (outcome === 'Hit By Pitch') {
+  if (outcome === 'Hit By Pitch' || outcome === 'Catcher Interference') {
     return { balls: 0, strikes: 0, paEnded: true, outsAdded: 0 };
   }
   if (outcome === 'Called Strike') {
@@ -52,6 +56,15 @@ export function advanceCount(balls, strikes, outcome) {
   }
   if (outcome === 'Strikeout Swinging' || outcome === 'Strikeout Looking') {
     return { balls: 0, strikes: 0, paEnded: true, outsAdded: 1 };
+  }
+  if (outcome === 'Dropped Third Strike Swinging' || outcome === 'Dropped Third Strike Looking') {
+    return { balls: 0, strikes: 0, paEnded: true, outsAdded: 0 };
+  }
+  if (outcome === 'Triple Play') {
+    return { balls: 0, strikes: 0, paEnded: true, outsAdded: 3 };
+  }
+  if (outcome === 'Pickoff' || outcome === 'Caught Stealing' || outcome === 'Additional Out' || outcome === 'Truncated Out') {
+    return { balls, strikes, paEnded: false, outsAdded: 1 };
   }
   if (outcome === 'Double Play') {
     return { balls: 0, strikes: 0, paEnded: true, outsAdded: 2 };
@@ -99,7 +112,7 @@ export function advanceRunners(runners, outcome) {
  * Properly handle Double outcome separately.
  */
 export function advanceRunnersForOutcome(runners, outcome) {
-  if (outcome === 'Walk' || outcome === 'Hit By Pitch') {
+  if (outcome === 'Walk' || outcome === 'Intentional Walk' || outcome === 'Hit By Pitch' || outcome === 'Catcher Interference' || outcome === 'Dropped Third Strike Swinging' || outcome === 'Dropped Third Strike Looking') {
     if (runners === '000') return '100';
     if (runners === '100') return '110';
     if (runners === '110') return '111';

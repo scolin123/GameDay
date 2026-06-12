@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './StrikeZone.module.css';
 
 const PITCH_COLORS = {
@@ -40,14 +40,23 @@ export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locat
       : null
   );
 
+  // Sync dot when parent resets locationX/locationY (e.g. after submit or resetForm)
+  useEffect(() => {
+    if (locationX == null || locationY == null) {
+      setDot(null);
+    } else {
+      setDot(normalizedToSvg(locationX, locationY));
+    }
+  }, [locationX, locationY]);
+
   function handleClick(e) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const scaleX = SVG_W / rect.width;
-    const scaleY = SVG_H / rect.height;
-    const svgX = (e.clientX - rect.left) * scaleX;
-    const svgY = (e.clientY - rect.top) * scaleY;
-    setDot({ svgX, svgY });
-    const norm = svgToNormalized(svgX, svgY);
+    const svg = e.currentTarget;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgPt = pt.matrixTransform(svg.getScreenCTM().inverse());
+    setDot({ svgX: svgPt.x, svgY: svgPt.y });
+    const norm = svgToNormalized(svgPt.x, svgPt.y);
     onLocationSet(norm.x, norm.y);
   }
 
@@ -80,39 +89,39 @@ export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locat
       <line x1={SZ_X} y1={SZ_Y + (SZ_H / 3) * 2} x2={SZ_X + SZ_W} y2={SZ_Y + (SZ_H / 3) * 2} stroke="#e2e8f0" strokeWidth="1" />
 
       {/* Labels */}
-      <text x={SVG_W / 2} y="50" textAnchor="middle" fontSize="11" fill="#94a3b8" fontFamily="IBM Plex Sans, sans-serif" fontWeight="600" style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>HIGH</text>
-      <text x={SVG_W / 2} y="396" textAnchor="middle" fontSize="11" fill="#94a3b8" fontFamily="IBM Plex Sans, sans-serif" fontWeight="600" style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>LOW</text>
-      <text x="60" y={SVG_H / 2 + 4} textAnchor="middle" fontSize="11" fill="#94a3b8" fontFamily="IBM Plex Sans, sans-serif" fontWeight="600" style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>IN</text>
-      <text x={SVG_W - 60} y={SVG_H / 2 + 4} textAnchor="middle" fontSize="11" fill="#94a3b8" fontFamily="IBM Plex Sans, sans-serif" fontWeight="600" style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>OUT</text>
+      <text x={SVG_W / 2} y="50" textAnchor="middle" fontSize="14" fill="#475569" fontFamily="IBM Plex Sans, sans-serif" fontWeight="800" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>HIGH</text>
+      <text x={SVG_W / 2} y="396" textAnchor="middle" fontSize="14" fill="#475569" fontFamily="IBM Plex Sans, sans-serif" fontWeight="800" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>LOW</text>
+      <text x="60" y={SVG_H / 2 + 4} textAnchor="middle" fontSize="14" fill="#475569" fontFamily="IBM Plex Sans, sans-serif" fontWeight="800" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>IN</text>
+      <text x={SVG_W - 60} y={SVG_H / 2 + 4} textAnchor="middle" fontSize="14" fill="#475569" fontFamily="IBM Plex Sans, sans-serif" fontWeight="800" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>OUT</text>
 
       {/* Baseball dot — click to open outcome panel */}
       {dot && (() => {
         const cx = dot.svgX;
         const cy = dot.svgY;
-        const r = 12;
+        const r = 10;
         return (
           <g onClick={(e) => { e.stopPropagation(); onDotClick?.(); }} style={{ cursor: 'pointer' }}>
             {/* Ball body */}
-            <circle cx={cx} cy={cy} r={r} fill="white" stroke="#cbd5e1" strokeWidth="1.5" />
-            {/* Left seam */}
+            <circle cx={cx} cy={cy} r={r} fill="white" stroke="#94a3b8" strokeWidth="1" />
+            {/* Left seam — dashed to look like stitching */}
             <path
-              d={`M ${cx - r*0.22},${cy - r*0.75} C ${cx - r*0.75},${cy - r*0.3} ${cx - r*0.75},${cy + r*0.3} ${cx - r*0.22},${cy + r*0.75}`}
-              fill="none" stroke="#dc2626" strokeWidth="1" strokeLinecap="round"
+              d={`M ${cx - r*0.22},${cy - r*0.78} C ${cx - r*0.82},${cy - r*0.3} ${cx - r*0.82},${cy + r*0.3} ${cx - r*0.22},${cy + r*0.78}`}
+              fill="none" stroke="#dc2626" strokeWidth="0.9" strokeLinecap="round"
+              strokeDasharray="1.8 1.4"
             />
-            {/* Right seam */}
+            {/* Right seam — dashed to look like stitching */}
             <path
-              d={`M ${cx + r*0.22},${cy - r*0.75} C ${cx + r*0.75},${cy - r*0.3} ${cx + r*0.75},${cy + r*0.3} ${cx + r*0.22},${cy + r*0.75}`}
-              fill="none" stroke="#dc2626" strokeWidth="1" strokeLinecap="round"
+              d={`M ${cx + r*0.22},${cy - r*0.78} C ${cx + r*0.82},${cy - r*0.3} ${cx + r*0.82},${cy + r*0.3} ${cx + r*0.22},${cy + r*0.78}`}
+              fill="none" stroke="#dc2626" strokeWidth="0.9" strokeLinecap="round"
+              strokeDasharray="1.8 1.4"
             />
-            {/* PITCH label */}
-            <text
-              x={cx} y={cy + 2.5}
-              textAnchor="middle"
-              fontSize="7"
-              fill="#0f172a"
+            {/* Label */}
+            <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle"
+              fontSize="4.5" fontWeight="700" fill="#475569"
               fontFamily="IBM Plex Sans, sans-serif"
-              fontWeight="700"
-            >PITCH</text>
+              style={{ letterSpacing: '0.04em', pointerEvents: 'none', userSelect: 'none' }}>
+              pitch
+            </text>
           </g>
         );
       })()}
