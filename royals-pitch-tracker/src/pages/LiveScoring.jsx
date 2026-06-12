@@ -1519,7 +1519,7 @@ export default function LiveScoring() {
                       <td>{p.pitch_type || '—'}</td>
                       <td>{p.outcome}</td>
                       <td>{p.balls}-{p.strikes}</td>
-                      <td>{p.runners || '000'}</td>
+                      <td>{normalizeRunners(p.runners)}</td>
                       <td>{p.quality_of_contact || '—'}</td>
                       <td>{p.spray_chart || '—'}</td>
                       <td>{p.time_to_plate_man_on_first || '—'}</td>
@@ -1558,7 +1558,7 @@ function exportCSV(pitches, game) {
       p.pitch_type || '',
       p.outcome || '',
       `${p.balls}-${p.strikes}`,
-      p.runners || '000',
+      normalizeRunners(p.runners),
       qocExport,
       sprayExport,
       p.time_to_plate_man_on_first != null ? p.time_to_plate_man_on_first : '',
