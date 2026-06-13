@@ -23,7 +23,7 @@ const OUTCOME_ABBREV = {
   'Groundout': 'GO', 'Flyout': 'FO', 'Lineout': 'LO', 'Popout': 'PO',
   'Sacrifice Fly': 'SF', 'Sacrifice Bunt': 'SH',
   'Double Play': 'DP', 'Triple Play': 'TP',
-  "Fielder's Choice": 'FC', 'Error': 'E',
+  "Fielder's Choice Out": 'FCO', "Fielder's Choice Safe": 'FCS', 'Error': 'E',
   'Catcher Interference': 'CI', 'Batter Interference': 'BI',
 };
 
@@ -44,9 +44,11 @@ const OUT_OUTCOMES = [
   'Groundout', 'Flyout', 'Lineout', 'Popout',
   'Double Play', 'Triple Play',
   'Sacrifice Fly', 'Sacrifice Bunt',
-  "Fielder's Choice", 'Error',
+  "Fielder's Choice Out", 'Error',
   'Batter Interference',
 ];
+
+const FC_SAFE_OUTCOMES = ["Fielder's Choice Safe"];
 
 const FIELD_EVENTS = ['Pickoff', 'Caught Stealing', 'Truncated Out', 'Additional Out'];
 
@@ -130,8 +132,24 @@ export default function LiveScoring() {
   const [rosterTabByTeam, setRosterTabByTeam] = useState({});
   const [rosterAddPitcherInputs, setRosterAddPitcherInputs] = useState({});
 
+  // Pinch hitter map: { [teamName]: { [batting_order]: phEntry } }
+  const [phMap, setPhMap] = useState({});
+  // Roster modal PH add mode per team
+  const [rosterPHMode, setRosterPHMode] = useState({});
+  const [rosterPHFor, setRosterPHFor] = useState({});       // { [team]: batting_order string }
+  const [rosterPHInputs, setRosterPHInputs] = useState({});  // { [team]: name string }
+
   // Truncated out: same batter leads off the next time that team bats
   const [truncatedBatterForNext, setTruncatedBatterForNext] = useState(null);
+
+  // Timer for time to plate (shown only with runner on 1st only)
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerStart, setTimerStart] = useState(null);
+  const [timerDisplay, setTimerDisplay] = useState(0);
+
+  // Bench PH flow (right column)
+  const [benchPHTarget, setBenchPHTarget] = useState(null);
+  const [benchPHForSlot, setBenchPHForSlot] = useState('');
 
   // Track first pitch_number of the current half inning (for half-inning pitch count)
   const [halfInningStartPitch, setHalfInningStartPitch] = useState(1);
@@ -139,6 +157,20 @@ export default function LiveScoring() {
   useEffect(() => {
     loadGameData();
   }, [gameId]);
+
+  useEffect(() => {
+    if (!timerRunning || timerStart === null) return;
+    const interval = setInterval(() => {
+      setTimerDisplay((Date.now() - timerStart) / 1000);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [timerRunning, timerStart]);
+
+  useEffect(() => {
+    if (runners !== '100' && timerRunning) {
+      setTimerRunning(false);
+    }
+  }, [runners]);
 
   async function loadGameData() {
     setLoading(true);
@@ -170,6 +202,14 @@ export default function LiveScoring() {
     setHomePitchers(pitchersHome);
     setAwayPitchers(pitchersAway);
     setRoster(rosterData || []);
+
+    // Build pinch-hitter map from roster
+    const initPhMap = {};
+    (rosterData || []).filter((p) => p.player_role === 'pinch_hitter').forEach((p) => {
+      if (!initPhMap[p.team]) initPhMap[p.team] = {};
+      initPhMap[p.team][p.batting_order] = p;
+    });
+    setPhMap(initPhMap);
 
     // TOP of 1st: away bats, home pitches
     if (pitchersHome.length > 0) {
@@ -312,6 +352,9 @@ export default function LiveScoring() {
     setShowOutcomePanel(false);
     setInPlayView(false);
     setQocView(false);
+    setTimerRunning(false);
+    setTimerStart(null);
+    setTimerDisplay(0);
   }
 
   async function handleSubmitPitch() {
@@ -448,8 +491,10 @@ export default function LiveScoring() {
       if (halfInning === 'TOP') setAwayBatterIdx(nextIdx);
       else setHomeBatterIdx(nextIdx);
       const nextInLineup = currentBatters[nextIdx];
-      setBatterInput(nextInLineup?.player_name || '');
-      setBatterSide(nextInLineup?.bats || '');
+      const nextOrder = nextInLineup?.batting_order || (nextIdx + 1);
+      const phForNext = nextInLineup ? phMap[battingTeam]?.[nextOrder] : null;
+      setBatterInput(phForNext?.player_name || nextInLineup?.player_name || '');
+      setBatterSide(phForNext?.bats || nextInLineup?.bats || '');
       setBalls(0);
       setStrikes(0);
       setRunners(newRunners);
@@ -530,8 +575,13 @@ export default function LiveScoring() {
     }
     if (nextHalf === 'TOP') setAwayBatterIdx(newIdx);
     else setHomeBatterIdx(newIdx);
-    setBatterInput(useName);
-    setBatterSide(useSide);
+    // Use PH if one exists for this lineup slot
+    const nextBatterEntry = newBatters[newIdx];
+    const nextOrder = nextBatterEntry?.batting_order || (newIdx + 1);
+    const phTeam = nextHalf === 'TOP' ? game?.away_team : game?.home_team;
+    const phForNext = nextBatterEntry && !batterOverride ? phMap[phTeam]?.[nextOrder] : null;
+    setBatterInput(phForNext?.player_name || useName);
+    setBatterSide(phForNext?.bats || useSide);
 
     // Restore pitcher from memory (persists until Change Pitcher is pressed)
     const newPitchingTeam = nextHalf === 'TOP' ? game?.home_team : game?.away_team;
@@ -600,13 +650,38 @@ export default function LiveScoring() {
     }
     setRoster((prev) => prev.filter((p) => p.id !== player.id));
     const rm = (prev) => prev.filter((p) => p.id !== player.id);
-    if (player.team === game?.away_team) {
+    if (player.player_role === 'pinch_hitter') {
+      setPhMap((prev) => {
+        const updated = { ...prev, [player.team]: { ...(prev[player.team] || {}) } };
+        delete updated[player.team][player.batting_order];
+        return updated;
+      });
+    } else if (player.team === game?.away_team) {
       if (player.player_role === 'pitcher') setAwayPitchers(rm);
       else setAwayBatters(rm);
     } else {
       if (player.player_role === 'pitcher') setHomePitchers(rm);
       else setHomeBatters(rm);
     }
+  }
+
+  async function handleRosterAddPH(team, replacedOrder, phName) {
+    const name = phName.trim();
+    if (!name || !replacedOrder) return;
+    const order = parseInt(replacedOrder);
+    const { data: saved } = await supabase.from('rosters').insert({
+      game_id: gameId, player_name: name, team,
+      player_role: 'pinch_hitter', batting_order: order, bats: null,
+    }).select().single();
+    const entry = saved || { player_name: name, team, player_role: 'pinch_hitter', batting_order: order, id: Date.now() };
+    setRoster((prev) => [...prev, entry]);
+    setPhMap((prev) => ({
+      ...prev,
+      [team]: { ...(prev[team] || {}), [order]: entry },
+    }));
+    setRosterPHInputs((prev) => ({ ...prev, [team]: '' }));
+    setRosterPHFor((prev) => ({ ...prev, [team]: '' }));
+    setRosterPHMode((prev) => ({ ...prev, [team]: false }));
   }
 
   async function handleRosterAddPitcher(team) {
@@ -636,6 +711,14 @@ export default function LiveScoring() {
     if (team === game.away_team) setAwayBatters((prev) => [...prev, entry]);
     else setHomeBatters((prev) => [...prev, entry]);
     setRosterAddInputs((prev) => ({ ...prev, [team]: '' }));
+  }
+
+  async function handleBenchPH(benchPlayer, slotOrder) {
+    const order = parseInt(slotOrder);
+    if (!order || !benchPlayer) return;
+    await handleRosterAddPH(battingTeam, order, benchPlayer.player_name);
+    setBenchPHTarget(null);
+    setBenchPHForSlot('');
   }
 
   async function handleSelectBatter(batter) {
@@ -993,28 +1076,50 @@ export default function LiveScoring() {
             ))}
           </section>
 
-          {/* Batting lineup */}
+          {/* Batting lineup — slots 1-9 only */}
           <section className={styles.section}>
             <div className={styles.sectionLabel}>Batting — {battingTeam}</div>
             {currentBatters.length === 0 && (
               <p className={styles.emptyText}>No batters on roster.</p>
             )}
-            {currentBatters.map((b, i) => (
-              <div
-                key={b.id}
-                className={`${styles.lineupRow} ${i === currentBatterIdx ? styles.lineupRowActive : ''}`}
-                onClick={() => {
-                  if (halfInning === 'TOP') setAwayBatterIdx(i);
-                  else setHomeBatterIdx(i);
-                  setBatterInput(b.player_name);
-                  setBatterSide(b.bats || '');
-                }}
-              >
-                <span className={styles.lineupOrder}>{b.batting_order || i + 1}</span>
-                <span className={styles.lineupName}>{b.player_name}</span>
-                {b.bats && <span className={styles.lineupSide}>{b.bats}</span>}
-              </div>
-            ))}
+            {currentBatters.map((b, i) => {
+              const order = b.batting_order || (i + 1);
+              if (order > 9) return null;
+              const ph = phMap[battingTeam]?.[order];
+              const isActive = i === currentBatterIdx;
+              return (
+                <div key={b.id}>
+                  <div
+                    className={`${styles.lineupRow} ${isActive && !ph ? styles.lineupRowActive : ''} ${ph ? styles.lineupRowReplaced : ''}`}
+                    onClick={() => {
+                      if (halfInning === 'TOP') setAwayBatterIdx(i);
+                      else setHomeBatterIdx(i);
+                      setBatterInput(ph?.player_name || b.player_name);
+                      setBatterSide(ph?.bats || b.bats || '');
+                    }}
+                  >
+                    <span className={styles.lineupOrder}>{order}</span>
+                    <span className={`${styles.lineupName} ${ph ? styles.lineupNameReplaced : ''}`}>{b.player_name}</span>
+                    {b.bats && !ph && <span className={styles.lineupSide}>{b.bats}</span>}
+                  </div>
+                  {ph && (
+                    <div
+                      className={`${styles.lineupRowPH} ${isActive ? styles.lineupRowActive : ''}`}
+                      onClick={() => {
+                        if (halfInning === 'TOP') setAwayBatterIdx(i);
+                        else setHomeBatterIdx(i);
+                        setBatterInput(ph.player_name);
+                        setBatterSide(ph.bats || '');
+                      }}
+                    >
+                      <span className={styles.phConnector}>└</span>
+                      <span className={styles.lineupName}>{ph.player_name}</span>
+                      <span className={styles.phBadge}>PH</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </section>
 
           {/* Pitcher stats */}
@@ -1039,6 +1144,107 @@ export default function LiveScoring() {
               </div>
             </div>
           </section>
+
+          {/* Time to Plate timer — only shown with runner on 1st only */}
+          {showTimeToPlate && (
+            <section className={styles.section}>
+              <div className={styles.sectionLabel}>Time to Plate</div>
+              <div className={styles.timerRow}>
+                <span className={styles.timerValue}>
+                  {timerRunning
+                    ? timerDisplay.toFixed(1)
+                    : timeToPlate || '0.0'}s
+                </span>
+                <button
+                  type="button"
+                  className={timerRunning ? styles.timerStopBtn : styles.timerStartBtn}
+                  onClick={() => {
+                    if (!timerRunning) {
+                      setTimerStart(Date.now());
+                      setTimerRunning(true);
+                      setTimerDisplay(0);
+                    } else {
+                      const elapsed = ((Date.now() - timerStart) / 1000).toFixed(1);
+                      setTimeToPlate(elapsed);
+                      setTimerRunning(false);
+                    }
+                  }}
+                >
+                  {timerRunning ? '■ Stop' : '▶ Start'}
+                </button>
+              </div>
+              {timeToPlate && !timerRunning && (
+                <div className={styles.timerRecorded}>{timeToPlate}s — saves with next pitch</div>
+              )}
+            </section>
+          )}
+
+          {/* Bench — batters beyond slot 9 */}
+          {(() => {
+            const benchBatters = currentBatters.filter((b, i) => {
+              const order = b.batting_order || (i + 1);
+              const isAlreadyPH = Object.values(phMap[battingTeam] || {}).some(
+                (ph) => ph.player_name === b.player_name
+              );
+              return order > 9 && !isAlreadyPH;
+            });
+            if (benchBatters.length === 0) return null;
+            const lineupForPH = currentBatters.filter((b, i) => (b.batting_order || (i + 1)) <= 9);
+            return (
+              <section className={styles.section}>
+                <div className={styles.sectionLabel}>Bench — {battingTeam}</div>
+                {benchBatters.map((b) => (
+                  <div key={b.id}>
+                    <div className={styles.benchRow}>
+                      <span className={styles.lineupName}>{b.player_name}</span>
+                      {b.bats && <span className={styles.lineupSide}>{b.bats}</span>}
+                      <button
+                        type="button"
+                        className={styles.benchPHBtn}
+                        onClick={() => {
+                          setBenchPHTarget(benchPHTarget?.id === b.id ? null : b);
+                          setBenchPHForSlot('');
+                        }}
+                      >
+                        PH
+                      </button>
+                    </div>
+                    {benchPHTarget?.id === b.id && (
+                      <div className={styles.benchPHPanel}>
+                        <select
+                          className={styles.select}
+                          value={benchPHForSlot}
+                          onChange={(e) => setBenchPHForSlot(e.target.value)}
+                        >
+                          <option value="">PHing for...</option>
+                          {lineupForPH.map((lb, li) => (
+                            <option key={lb.id} value={lb.batting_order || (li + 1)}>
+                              #{lb.batting_order || (li + 1)} {lb.player_name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className={styles.rosterAddBtn}
+                          disabled={!benchPHForSlot}
+                          onClick={() => handleBenchPH(b, benchPHForSlot)}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.cancelBtn}
+                          onClick={() => { setBenchPHTarget(null); setBenchPHForSlot(''); }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </section>
+            );
+          })()}
         </div>
       </div>
 
@@ -1250,11 +1456,20 @@ export default function LiveScoring() {
                   ))}
                 </div>
 
-                <div className={styles.outcomeSection} style={{ borderBottom: 'none' }}>
+                <div className={styles.outcomeSection}>
                   <div className={`${styles.outcomeSectionLabel} ${styles.outLabelStyle}`}>Out</div>
                   {OUT_OUTCOMES.map((o) => (
                     <button key={o} type="button"
                       className={`${styles.outcomeRowBtn} ${styles.outRowBtn}`}
+                      onClick={() => { setOutcome(o); setQocView(true); }}>{o}</button>
+                  ))}
+                </div>
+
+                <div className={styles.outcomeSection} style={{ borderBottom: 'none' }}>
+                  <div className={`${styles.outcomeSectionLabel} ${styles.fcSafeLabel}`}>Fielder's Choice</div>
+                  {FC_SAFE_OUTCOMES.map((o) => (
+                    <button key={o} type="button"
+                      className={`${styles.outcomeRowBtn} ${styles.fcSafeBtn}`}
                       onClick={() => { setOutcome(o); setQocView(true); }}>{o}</button>
                   ))}
                 </div>
@@ -1420,38 +1635,127 @@ export default function LiveScoring() {
 
                     {activeTab === 'batters' ? (
                       <>
-                        {batters.length === 0 && (
+                        {/* Lineup slots 1-9 */}
+                        {batters.filter((p, i) => (p.batting_order || (i + 1)) <= 9).length === 0 && (
                           <div className={styles.rosterEmpty}>No batters added yet.</div>
                         )}
-                        {batters.map((p, i) => (
-                          <div
-                            key={p.id}
-                            className={`${styles.rosterRow} ${isDragging && rosterDragOver === i ? styles.rosterRowOver : ''} ${isDragging && rosterDragSrc.fromIdx === i ? styles.rosterRowDragging : ''}`}
-                            draggable
-                            onDragStart={() => setRosterDragSrc({ team, fromIdx: i })}
-                            onDragOver={(e) => { e.preventDefault(); setRosterDragOver(i); }}
-                            onDrop={() => handleRosterReorder(team, batters, rosterDragSrc?.fromIdx ?? i, i)}
-                            onDragEnd={() => { setRosterDragSrc(null); setRosterDragOver(null); }}
-                          >
-                            <span className={styles.rosterDragHandle} title="Drag to reorder">⠿</span>
-                            <span className={styles.rosterOrder}>{i + 1}</span>
-                            <span className={styles.rosterName}>{p.player_name}</span>
-                            {p.bats && <span className={styles.rosterSide}>{p.bats}</span>}
-                            <button type="button" className={styles.rosterRemoveBtn} onClick={() => handleRosterRemove(p)} title="Remove">×</button>
-                          </div>
-                        ))}
-                        <div className={styles.rosterAddRow}>
-                          <input
-                            className={styles.rosterAddInput}
-                            placeholder="Add batter name..."
-                            value={rosterAddInputs[team] || ''}
-                            onChange={(e) => setRosterAddInputs((prev) => ({ ...prev, [team]: e.target.value }))}
-                            onKeyDown={(e) => e.key === 'Enter' && handleRosterAddBatter(team)}
-                          />
-                          <button type="button" className={styles.rosterAddBtn}
-                            onClick={() => handleRosterAddBatter(team)}
-                            disabled={!(rosterAddInputs[team] || '').trim()}>Add</button>
+                        {batters.map((p, i) => {
+                          const order = p.batting_order || (i + 1);
+                          if (order > 9) return null;
+                          const ph = phMap[team]?.[order];
+                          return (
+                            <div key={p.id}>
+                              <div
+                                className={`${styles.rosterRow} ${ph ? styles.rosterRowReplaced : ''} ${isDragging && rosterDragOver === i ? styles.rosterRowOver : ''} ${isDragging && rosterDragSrc?.fromIdx === i ? styles.rosterRowDragging : ''}`}
+                                draggable
+                                onDragStart={() => setRosterDragSrc({ team, fromIdx: i })}
+                                onDragOver={(e) => { e.preventDefault(); setRosterDragOver(i); }}
+                                onDrop={() => handleRosterReorder(team, batters, rosterDragSrc?.fromIdx ?? i, i)}
+                                onDragEnd={() => { setRosterDragSrc(null); setRosterDragOver(null); }}
+                              >
+                                <span className={styles.rosterDragHandle} title="Drag to reorder">⠿</span>
+                                <span className={styles.rosterOrder}>{order}</span>
+                                <span className={`${styles.rosterName} ${ph ? styles.rosterNameReplaced : ''}`}>{p.player_name}</span>
+                                {p.bats && !ph && <span className={styles.rosterSide}>{p.bats}</span>}
+                                <button type="button" className={styles.rosterRemoveBtn} onClick={() => handleRosterRemove(p)} title="Remove">×</button>
+                              </div>
+                              {ph && (
+                                <div className={styles.rosterRowPH}>
+                                  <span className={styles.phConnectorRoster}>└</span>
+                                  <span className={styles.rosterName}>{ph.player_name}</span>
+                                  {ph.bats && <span className={styles.rosterSide}>{ph.bats}</span>}
+                                  <span className={styles.phBadgeRoster}>PH</span>
+                                  <button type="button" className={styles.rosterRemoveBtn} onClick={() => handleRosterRemove(ph)} title="Remove PH">×</button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Bench — slots 10+ */}
+                        {batters.some((p, i) => (p.batting_order || (i + 1)) > 9) && (
+                          <div className={styles.benchSubLabel}>Bench</div>
+                        )}
+                        {batters.map((p, i) => {
+                          const order = p.batting_order || (i + 1);
+                          if (order <= 9) return null;
+                          return (
+                            <div key={p.id} className={styles.rosterRow}>
+                              <span className={styles.rosterName}>{p.player_name}</span>
+                              {p.bats && <span className={styles.rosterSide}>{p.bats}</span>}
+                              <span className={styles.rosterSide} style={{ color: 'var(--text-muted)' }}>Bench</span>
+                              <button type="button" className={styles.rosterRemoveBtn} onClick={() => handleRosterRemove(p)} title="Remove">×</button>
+                            </div>
+                          );
+                        })}
+
+                        {/* Add row: toggle between Batter and Pinch Hitter */}
+                        <div className={styles.rosterAddTypeRow}>
+                          <button type="button"
+                            className={`${styles.rosterAddTypeBtn} ${!rosterPHMode[team] ? styles.rosterAddTypeBtnActive : ''}`}
+                            onClick={() => setRosterPHMode((prev) => ({ ...prev, [team]: false }))}>
+                            Batter
+                          </button>
+                          <button type="button"
+                            className={`${styles.rosterAddTypeBtn} ${rosterPHMode[team] ? styles.rosterAddTypeBtnActive : ''}`}
+                            onClick={() => setRosterPHMode((prev) => ({ ...prev, [team]: true }))}>
+                            Pinch Hitter
+                          </button>
                         </div>
+                        {rosterPHMode[team] ? (
+                          <div className={styles.rosterAddRow} style={{ flexWrap: 'wrap', gap: 6 }}>
+                            <select
+                              className={styles.rosterPHSelect}
+                              value={rosterPHFor[team] || ''}
+                              onChange={(e) => setRosterPHFor((prev) => ({ ...prev, [team]: e.target.value }))}
+                            >
+                              <option value="">PHing for...</option>
+                              {batters.filter((b, i) => (b.batting_order || (i + 1)) <= 9).map((b, i) => (
+                                <option key={b.id} value={b.batting_order || (i + 1)}>
+                                  #{b.batting_order || (i + 1)} {b.player_name}
+                                </option>
+                              ))}
+                            </select>
+                            {(() => {
+                              const benchNames = batters.filter((b, i) => (b.batting_order || (i + 1)) > 9);
+                              return (
+                                <>
+                                  <input
+                                    list={`bench-ph-list-${team}`}
+                                    className={styles.rosterAddInput}
+                                    placeholder="PH name or pick from bench..."
+                                    value={rosterPHInputs[team] || ''}
+                                    onChange={(e) => setRosterPHInputs((prev) => ({ ...prev, [team]: e.target.value }))}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleRosterAddPH(team, rosterPHFor[team], rosterPHInputs[team])}
+                                  />
+                                  {benchNames.length > 0 && (
+                                    <datalist id={`bench-ph-list-${team}`}>
+                                      {benchNames.map((b) => <option key={b.id} value={b.player_name} />)}
+                                    </datalist>
+                                  )}
+                                </>
+                              );
+                            })()}
+                            <button type="button" className={styles.rosterAddBtn}
+                              onClick={() => handleRosterAddPH(team, rosterPHFor[team], rosterPHInputs[team])}
+                              disabled={!rosterPHFor[team] || !(rosterPHInputs[team] || '').trim()}>
+                              Add PH
+                            </button>
+                          </div>
+                        ) : (
+                          <div className={styles.rosterAddRow}>
+                            <input
+                              className={styles.rosterAddInput}
+                              placeholder="Add batter name..."
+                              value={rosterAddInputs[team] || ''}
+                              onChange={(e) => setRosterAddInputs((prev) => ({ ...prev, [team]: e.target.value }))}
+                              onKeyDown={(e) => e.key === 'Enter' && handleRosterAddBatter(team)}
+                            />
+                            <button type="button" className={styles.rosterAddBtn}
+                              onClick={() => handleRosterAddBatter(team)}
+                              disabled={!(rosterAddInputs[team] || '').trim()}>Add</button>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>
@@ -1544,7 +1848,7 @@ function exportCSV(pitches, game) {
     'Pitch Type','Outcome','Count','Runners','QOC','Spray','Time to Plate','Notes'
   ];
   const rows = pitches.map((p) => {
-    const qocExport = p.outcome === "Fielder's Choice"
+    const qocExport = p.outcome === "Fielder's Choice Out"
       ? 'Ground Ball'
       : (QOC_EXPORT[p.quality_of_contact] || p.quality_of_contact || '');
     const sprayExport = SPRAY_EXPORT[p.spray_chart] || p.spray_chart || '';

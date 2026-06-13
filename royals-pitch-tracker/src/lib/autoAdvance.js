@@ -5,15 +5,16 @@ export const PA_ENDING_OUTCOMES = new Set([
   'Strikeout Swinging', 'Strikeout Looking',
   'Dropped Third Strike Swinging', 'Dropped Third Strike Looking',
   'Sacrifice Fly', 'Sacrifice Bunt',
-  'Double Play', 'Triple Play', "Fielder's Choice", 'Error',
-  'Batter Interference',
+  'Double Play', 'Triple Play',
+  "Fielder's Choice Out", "Fielder's Choice Safe",
+  'Error', 'Batter Interference',
 ]);
 
 export const OUT_OUTCOMES = new Set([
   'Groundout', 'Flyout', 'Lineout', 'Popout',
   'Strikeout Swinging', 'Strikeout Looking',
   'Sacrifice Fly', 'Sacrifice Bunt',
-  "Fielder's Choice",
+  "Fielder's Choice Out",
   'Batter Interference',
 ]);
 
@@ -21,8 +22,9 @@ export const IN_PLAY_OUTCOMES = new Set([
   'Single', 'Double', 'Triple', 'Home Run',
   'Groundout', 'Flyout', 'Lineout', 'Popout',
   'Sacrifice Fly', 'Sacrifice Bunt',
-  'Double Play', 'Triple Play', "Fielder's Choice", 'Error',
-  'Batter Interference',
+  'Double Play', 'Triple Play',
+  "Fielder's Choice Out", "Fielder's Choice Safe",
+  'Error', 'Batter Interference',
 ]);
 
 /**
@@ -141,6 +143,10 @@ export function advanceRunnersForOutcome(runners, outcome) {
     if (runners[0] === '1') return '0' + runners[1] + runners[2];
     if (runners[1] === '1') return runners[0] + '0' + runners[2];
     return runners[0] + runners[1] + '0';
+  }
+  if (outcome === "Fielder's Choice Safe") {
+    // Batter reaches 1st safely; a runner was thrown out (scorer adjusts runners manually)
+    return '1' + runners[1] + runners[2];
   }
   return runners;
 }

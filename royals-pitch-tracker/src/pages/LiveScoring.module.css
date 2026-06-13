@@ -1088,6 +1088,251 @@
   cursor: not-allowed;
 }
 
+/* Pinch hitter rows in roster modal */
+.rosterRowPH {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px 5px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-base);
+}
+
+.rosterRowReplaced {
+  opacity: 0.5;
+}
+
+.rosterNameReplaced {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.phConnectorRoster {
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.phBadgeRoster {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+/* Batter / Pinch Hitter add type toggle */
+.rosterAddTypeRow {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.rosterAddTypeBtn {
+  flex: 1;
+  padding: 5px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.rosterAddTypeBtn:hover {
+  color: var(--text-primary);
+}
+
+.rosterAddTypeBtnActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.rosterPHSelect {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 5px 6px;
+  font-size: 12px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.rosterPHSelect:focus {
+  border-color: var(--accent);
+}
+
+/* Pinch hitter rows in right-column lineup */
+.lineupRowPH {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px 4px 22px;
+  cursor: pointer;
+  background: var(--bg-base);
+}
+
+.lineupRowPH:hover {
+  background: var(--bg-elevated);
+}
+
+.lineupRowReplaced {
+  opacity: 0.45;
+}
+
+.lineupNameReplaced {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.phConnector {
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.phBadge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 1px 4px;
+  flex-shrink: 0;
+}
+
+/* Timer section */
+.timerRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.timerValue {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  min-width: 60px;
+}
+
+.timerStartBtn {
+  padding: 6px 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.timerStartBtn:hover {
+  background: var(--accent-hover);
+}
+
+.timerStopBtn {
+  padding: 6px 14px;
+  background: var(--color-danger);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.timerStopBtn:hover {
+  opacity: 0.85;
+}
+
+.timerRecorded {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Bench section in right column */
+.benchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.benchPHBtn {
+  margin-left: auto;
+  padding: 2px 8px;
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.benchPHBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.benchPHPanel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0 6px 8px;
+  flex-wrap: wrap;
+}
+
+/* Fielder's Choice Safe button */
+.fcSafeLabel {
+  color: #16a34a;
+}
+
+.fcSafeBtn {
+  background: none;
+  color: #16a34a;
+  border: 1px solid #16a34a;
+}
+
+.fcSafeBtn:hover {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+/* Bench sub-label in roster modal */
+.benchSubLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 8px 10px 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+}
+
 /* View Log nav button */
 .viewLogBtn {
   padding: 4px 12px;

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import NewGame from './pages/NewGame';
 import LiveScoring from './pages/LiveScoring';
@@ -33,6 +34,7 @@ export default function App() {
           path="/login"
           element={session ? <Navigate to="/" replace /> : <Login />}
         />
+        <Route path="/register" element={<Register />} />
         <Route
           path="/"
           element={

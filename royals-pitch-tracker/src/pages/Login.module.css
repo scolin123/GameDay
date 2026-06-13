@@ -77,3 +77,48 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.formActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.createAccountBtn {
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.createAccountBtn:hover {
+  text-decoration: underline;
+}
+
+.switchLink {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-top: 4px;
+}
+
+.switchLink:hover {
+  color: var(--text-primary);
+}
+
+.registerSubtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.successMsg {
+  font-size: 13px;
+  color: #16a34a;
+  padding: 8px 12px;
+  background: rgba(22, 163, 74, 0.08);
+  border-radius: 4px;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+}

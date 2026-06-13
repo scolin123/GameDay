@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import styles from './Login.module.css';
 
@@ -52,9 +52,14 @@ export default function Login() {
             />
           </div>
           {error && <p className={styles.error}>{error}</p>}
-          <button type="submit" className={styles.submitBtn} disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+          <div className={styles.formActions}>
+            <button type="submit" className={styles.submitBtn} disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+            <Link to="/register" className={styles.createAccountBtn}>
+              Create Account
+            </Link>
+          </div>
         </form>
       </div>
     </div>
