@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -12,6 +12,19 @@ function ProtectedRoute({ children, session }) {
   if (session === undefined) return null;
   if (!session) return <Navigate to="/login" replace />;
   return children;
+}
+
+// Detects Supabase invite tokens in the URL hash and redirects to /register
+// so the user lands on the set-password form rather than the Dashboard.
+function InviteRedirector() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('type=invite')) {
+      navigate('/register' + hash, { replace: true });
+    }
+  }, [navigate]);
+  return null;
 }
 
 export default function App() {
@@ -29,6 +42,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <InviteRedirector />
       <Routes>
         <Route
           path="/login"
