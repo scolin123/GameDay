@@ -117,18 +117,11 @@ export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locat
 
   const color = PITCH_COLORS[pitchType] || PITCH_COLORS.OT;
 
-  // Tooltip positioning — flip left if near right edge
-  const TOOLTIP_W = 112;
-  const TOOLTIP_H = 22;
-  let tooltipX = 0, tooltipY = 0;
-  let hoverCoords = null;
-  if (hover) {
-    hoverCoords = svgToDisplayCoords(hover.svgX, hover.svgY);
-    tooltipX = hover.svgX + 10;
-    tooltipY = hover.svgY - 30;
-    if (tooltipX + TOOLTIP_W > SVG_W) tooltipX = hover.svgX - TOOLTIP_W - 10;
-    if (tooltipY < 2) tooltipY = hover.svgY + 10;
-  }
+  const COORD_W = 112;
+  const COORD_H = 22;
+  const COORD_X = SVG_W - COORD_W - 4;
+  const COORD_Y = SVG_H - COORD_H - 4;
+  const hoverCoords = hover ? svgToDisplayCoords(hover.svgX, hover.svgY) : null;
 
   // Silhouette positions
   const GROUND_Y = SZ_Y + SZ_H + 5; // 305 — just below zone bottom
@@ -176,13 +169,13 @@ export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locat
       <text x="60"        y={SVG_H / 2 + 4} textAnchor="middle" fontSize="14" fill="#475569" fontFamily="IBM Plex Sans, sans-serif" fontWeight="800" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>IN</text>
       <text x={SVG_W - 60} y={SVG_H / 2 + 4} textAnchor="middle" fontSize="14" fill="#475569" fontFamily="IBM Plex Sans, sans-serif" fontWeight="800" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>OUT</text>
 
-      {/* Hover coordinate tooltip */}
+      {/* Coordinate display — fixed bottom-right corner */}
       {hoverCoords && (
         <>
-          <rect x={tooltipX} y={tooltipY} width={TOOLTIP_W} height={TOOLTIP_H} rx="3" fill="rgba(15,23,42,0.82)" />
+          <rect x={COORD_X} y={COORD_Y} width={COORD_W} height={COORD_H} rx="3" fill="rgba(15,23,42,0.82)" />
           <text
-            x={tooltipX + TOOLTIP_W / 2}
-            y={tooltipY + 14}
+            x={COORD_X + COORD_W / 2}
+            y={COORD_Y + 14}
             textAnchor="middle"
             fontSize="11"
             fill="white"
