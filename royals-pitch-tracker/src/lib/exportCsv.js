@@ -8,6 +8,9 @@ const PITCH_TYPE_FULL = {
   CH: 'Changeup',
   CT: 'Cutter',
   SK: 'Sinker',
+  SV: 'Slurve',
+  SW: 'Sweeper',
+  SP: 'Splitter',
   OT: 'Other',
   UN: 'Unknown',
 };

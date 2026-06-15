@@ -7,11 +7,14 @@ const PRIMARY = [
 ];
 
 const SECONDARY = [
-  { code: 'CB', label: 'Curveball', color: '#2563eb' },
-  { code: 'SL', label: 'Slider',    color: '#ea580c' },
-  { code: 'CH', label: 'Changeup',  color: '#9333ea' },
-  { code: 'CT', label: 'Cutter',    color: '#ca8a04' },
   { code: 'SK', label: 'Sinker',    color: '#0891b2' },
+  { code: 'CT', label: 'Cutter',    color: '#ca8a04' },
+  { code: 'SL', label: 'Slider',    color: '#ea580c' },
+  { code: 'CB', label: 'Curveball', color: '#2563eb' },
+  { code: 'SV', label: 'Slurve',    color: '#7c3aed' },
+  { code: 'SW', label: 'Sweeper',   color: '#db2777' },
+  { code: 'CH', label: 'Changeup',  color: '#9333ea' },
+  { code: 'SP', label: 'Splitter',  color: '#059669' },
   { code: 'OT', label: 'Other',     color: '#64748b' },
 ];
 

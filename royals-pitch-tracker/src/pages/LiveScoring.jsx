@@ -34,7 +34,8 @@ const NOT_AB_OUTCOMES = new Set([
 
 const PITCH_TYPE_LABELS = {
   FB: 'Fastball', OS: 'Offspeed', CB: 'Curveball', SL: 'Slider',
-  CH: 'Changeup', CT: 'Cutter', SK: 'Sinker', OT: 'Other', UN: 'Unknown',
+  CH: 'Changeup', CT: 'Cutter', SK: 'Sinker', SV: 'Slurve',
+  SW: 'Sweeper', SP: 'Splitter', OT: 'Other', UN: 'Unknown',
 };
 
 const BALL_OUTCOMES = ['Ball', 'Hit By Pitch', 'Catcher Interference'];
@@ -1153,8 +1154,8 @@ export default function LiveScoring() {
               <div className={styles.timerRow}>
                 <span className={styles.timerValue}>
                   {timerRunning
-                    ? timerDisplay.toFixed(1)
-                    : timeToPlate || '0.0'}s
+                    ? timerDisplay.toFixed(3)
+                    : timeToPlate || '0.000'}s
                 </span>
                 <button
                   type="button"
@@ -1165,7 +1166,7 @@ export default function LiveScoring() {
                       setTimerRunning(true);
                       setTimerDisplay(0);
                     } else {
-                      const elapsed = ((Date.now() - timerStart) / 1000).toFixed(1);
+                      const elapsed = ((Date.now() - timerStart) / 1000).toFixed(3);
                       setTimeToPlate(elapsed);
                       setTimerRunning(false);
                     }
@@ -1860,7 +1861,7 @@ function exportCSV(pitches, game) {
       p.batter_side || '',
       p.pitcher || '',
       p.pitcher_side || '',
-      p.pitch_type || '',
+      PITCH_TYPE_LABELS[p.pitch_type] || p.pitch_type || '',
       p.outcome || '',
       `${p.balls}-${p.strikes}`,
       normalizeRunners(p.runners),

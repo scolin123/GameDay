@@ -9,6 +9,9 @@ const PITCH_COLORS = {
   CH: '#9333ea',
   CT: '#ca8a04',
   SK: '#0891b2',
+  SV: '#7c3aed',
+  SW: '#db2777',
+  SP: '#059669',
   OT: '#64748b',
   UN: '#94a3b8',
 };
@@ -46,42 +49,6 @@ function getSvgPoint(svg, e) {
   return pt.matrixTransform(svg.getScreenCTM().inverse());
 }
 
-// Batter silhouette drawn facing LEFT; mirror via scale(-1,1) for right-facing.
-// Origin = feet center at (0, 0); y decreases upward in this local space.
-function BatterSilhouette({ cx, baseY, facingLeft }) {
-  return (
-    <g
-      transform={`translate(${cx},${baseY}) scale(${facingLeft ? 1 : -1},1)`}
-      fill="black"
-      opacity="0.15"
-    >
-      {/* Front foot (left, toward zone) */}
-      <ellipse cx="-22" cy="-3" rx="18" ry="6" />
-      {/* Back foot */}
-      <ellipse cx="16" cy="-3" rx="14" ry="5" />
-      {/* Legs combined */}
-      <path d="M -28,0 L -30,-75 L -12,-112 L 10,-112 L 25,-70 L 28,0 L 18,0 L 22,-68 L 8,-108 L -6,-108 L -22,-68 L -18,0 Z" />
-      {/* Torso */}
-      <path d="M -12,-112 L -22,-162 L 22,-162 L 12,-112 Z" />
-      {/* Shoulders */}
-      <ellipse cx="0" cy="-162" rx="25" ry="10" />
-      {/* Neck */}
-      <rect x="-6" y="-178" width="12" height="17" rx="4" />
-      {/* Head */}
-      <circle cx="-3" cy="-192" r="17" />
-      {/* Helmet cap */}
-      <path d="M -20,-192 Q -22,-213 -4,-215 Q 14,-215 16,-197 Q 14,-178 -4,-175 Z" />
-      {/* Helmet brim toward pitcher */}
-      <rect x="-38" y="-200" width="18" height="8" rx="3" />
-      {/* Front arm */}
-      <path d="M -22,-155 L -42,-130 L -36,-123 L -16,-150 Z" />
-      {/* Back arm */}
-      <path d="M 22,-155 L 40,-128 L 34,-121 L 16,-150 Z" />
-      {/* Bat */}
-      <path d="M 38,-124 L 60,-200 L 68,-197 L 46,-121 Z" />
-    </g>
-  );
-}
 
 export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locationX, locationY, batterSide }) {
   const [dot, setDot] = useState(
@@ -123,14 +90,6 @@ export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locat
   const COORD_Y = SVG_H - COORD_H - 4;
   const hoverCoords = hover ? svgToDisplayCoords(hover.svgX, hover.svgY) : null;
 
-  // Silhouette positions
-  const GROUND_Y = SZ_Y + SZ_H + 5; // 305 — just below zone bottom
-  const RIGHT_CX = SZ_X + SZ_W + 80; // 395
-  const LEFT_CX = SZ_X - 80;          // 85
-
-  const showRight = batterSide === 'R' || batterSide === 'S';
-  const showLeft  = batterSide === 'L' || batterSide === 'S';
-
   return (
     <svg
       viewBox={`0 0 ${SVG_W} ${SVG_H}`}
@@ -142,10 +101,6 @@ export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locat
     >
       {/* Background */}
       <rect x="0" y="0" width={SVG_W} height={SVG_H} fill="#f8fafc" />
-
-      {/* Batter silhouettes — drawn first so zone sits on top */}
-      {showRight && <BatterSilhouette cx={RIGHT_CX} baseY={GROUND_Y} facingLeft={true} />}
-      {showLeft  && <BatterSilhouette cx={LEFT_CX}  baseY={GROUND_Y} facingLeft={false} />}
 
       {/* Outer frame */}
       <rect x="120" y="60" width="240" height="320" stroke="#e2e8f0" fill="none" strokeWidth="1" />
