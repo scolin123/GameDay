@@ -1033,6 +1033,7 @@ export default function LiveScoring() {
               pitchType={pitchType}
               locationX={locationX}
               locationY={locationY}
+              batterSide={batterSide}
             />
           </div>
 

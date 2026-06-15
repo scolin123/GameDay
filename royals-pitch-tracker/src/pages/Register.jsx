@@ -75,6 +75,19 @@ export default function Register() {
           <>
             <p className={styles.registerSubtitle}>You've been invited. Set a password to activate your account.</p>
             <form onSubmit={handleSetPassword} className={styles.form}>
+              {email && (
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="inv-email">Email</label>
+                  <input
+                    id="inv-email"
+                    type="email"
+                    className={styles.input}
+                    value={email}
+                    readOnly
+                    disabled
+                  />
+                </div>
+              )}
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="password">New Password</label>
                 <input
