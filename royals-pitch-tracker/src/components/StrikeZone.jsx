@@ -26,7 +26,7 @@ const SVG_H = 420;
 function svgToNormalized(svgX, svgY) {
   const x = ((svgX - SZ_X) / SZ_W) * 2 - 1;
   const y = -(((svgY - SZ_Y) / SZ_H) * 2 - 1);
-  return { x: parseFloat(x.toFixed(3)), y: parseFloat(y.toFixed(3)) };
+  return { x: parseFloat(x.toFixed(10)), y: parseFloat(y.toFixed(10)) };
 }
 
 function normalizedToSvg(nx, ny) {
