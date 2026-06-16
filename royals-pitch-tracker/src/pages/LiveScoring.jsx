@@ -38,6 +38,9 @@ const PITCH_TYPE_LABELS = {
   SW: 'Sweeper', SP: 'Splitter', OT: 'Other', UN: 'Unknown',
 };
 
+const QOC_EXPORT = { GB: 'Ground Ball', LD: 'Line Drive', FB: 'Fly Ball', PU: 'Pop Up' };
+const SPRAY_EXPORT = { Pull: 'Pull', Straight: 'Straightaway', Oppo: 'Opposite Field' };
+
 const BALL_OUTCOMES = ['Ball', 'Hit By Pitch', 'Catcher Interference'];
 const STRIKE_OUTCOMES = ['Called Strike', 'Swinging Strike', 'Foul'];
 const HIT_OUTCOMES = ['Single', 'Double', 'Triple', 'Home Run'];
@@ -1819,16 +1822,16 @@ export default function LiveScoring() {
                   {gamePitches.map((p) => (
                     <tr key={p.id}>
                       <td>{p.pitch_number}</td>
-                      <td>{(p.half_inning === 'TOP' ? 'Top' : 'Bot')} {p.inning}</td>
+                      <td>{(p.half_inning === 'TOP' ? 'Top' : 'Bottom')} {p.inning}</td>
                       <td>{p.batter}{p.batter_side ? ` (${p.batter_side})` : ''}</td>
                       <td>{p.pitcher}{p.pitcher_side ? ` (${p.pitcher_side})` : ''}</td>
-                      <td>{p.pitch_type || '—'}</td>
+                      <td>{PITCH_TYPE_LABELS[p.pitch_type] || p.pitch_type || '—'}</td>
                       <td>{p.outcome}</td>
                       <td>{p.balls}-{p.strikes}</td>
                       <td>{normalizeRunners(p.runners)}</td>
-                      <td>{p.quality_of_contact || '—'}</td>
-                      <td>{p.spray_chart || '—'}</td>
-                      <td>{p.time_to_plate_man_on_first || '—'}</td>
+                      <td>{QOC_EXPORT[p.quality_of_contact] || p.quality_of_contact || '—'}</td>
+                      <td>{SPRAY_EXPORT[p.spray_chart] || p.spray_chart || '—'}</td>
+                      <td>{p.time_to_plate_man_on_first ?? '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1840,9 +1843,6 @@ export default function LiveScoring() {
     </div>
   );
 }
-
-const QOC_EXPORT = { GB: 'Ground Ball', LD: 'Line Drive', FB: 'Fly Ball', PU: 'Pop Up' };
-const SPRAY_EXPORT = { Pull: 'Pull', Straight: 'Straightaway', Oppo: 'Opposite Field' };
 
 function exportCSV(pitches, game) {
   const headers = [
