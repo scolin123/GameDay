@@ -1847,7 +1847,7 @@ export default function LiveScoring() {
 function exportCSV(pitches, game) {
   const headers = [
     'Pitch #','Half Inning','Batter','Batter Side','Pitcher','Pitcher Side',
-    'Pitch Type','Outcome','Count','Runners','QOC','Spray','Time to Plate','Notes'
+    'Pitch Type','Outcome','Count','Runners','QOC','Spray','Time to Plate','Pitch Location X','Pitch Location Y','Notes'
   ];
   const rows = pitches.map((p) => {
     const qocExport = p.outcome === "Fielder's Choice Out"
@@ -1868,6 +1868,8 @@ function exportCSV(pitches, game) {
       qocExport,
       sprayExport,
       p.time_to_plate_man_on_first != null ? p.time_to_plate_man_on_first : '',
+      p.pitch_location_x != null ? p.pitch_location_x : '',
+      p.pitch_location_y != null ? p.pitch_location_y : '',
       p.notes || '',
     ];
   });

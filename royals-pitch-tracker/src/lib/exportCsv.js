@@ -1,5 +1,18 @@
 import Papa from 'papaparse';
 
+const QOC_FULL = {
+  GB: 'Ground Ball',
+  LD: 'Line Drive',
+  PU: 'Pop Up',
+  FB: 'Fly Ball',
+};
+
+const SPRAY_FULL = {
+  Pull: 'Pull',
+  Straight: 'Straightaway',
+  Oppo: 'Opposite Field',
+};
+
 const PITCH_TYPE_FULL = {
   FB: 'Fastball',
   OS: 'Offspeed',
@@ -65,8 +78,8 @@ export async function exportGameCsv(gameId, supabase) {
     'Pitcher_Side': safe(p.pitcher_side),
     'Pitch_Type': p.pitch_type ? (PITCH_TYPE_FULL[p.pitch_type] || p.pitch_type) : '',
     'Outcome': safe(p.outcome),
-    'Quality of Contact': safe(p.quality_of_contact),
-    'Spray Chart': safe(p.spray_chart),
+    'Quality of Contact': p.quality_of_contact ? (QOC_FULL[p.quality_of_contact] || p.quality_of_contact) : '',
+    'Spray Chart': p.spray_chart ? (SPRAY_FULL[p.spray_chart] || p.spray_chart) : '',
     'Runners': safe(p.runners),
     'Pitch_Location_X': safe(p.pitch_location_x),
     'Pitch_Location_Y': safe(p.pitch_location_y),
