@@ -1845,9 +1845,16 @@ export default function LiveScoring() {
 }
 
 function exportCSV(pitches, game) {
+  const dateFormatted = game?.date
+    ? new Date(game.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+    : '';
   const headers = [
-    'Pitch #','Half Inning','Batter','Batter Side','Pitcher','Pitcher Side',
-    'Pitch Type','Outcome','Count','Runners','QOC','Spray','Time to Plate','Pitch Location X','Pitch Location Y','Notes'
+    'Half Inning','Inning','Outs','Balls','Strikes','Count',
+    'Batter_Team','Pitcher_Team','Date','Home Team','Away Team',
+    'Time To Plate (sec) with Man on First',
+    'Batter','Pitcher','Batter_Side','Pitcher_Side',
+    'Pitch_Type','Outcome','Quality of Contact','Spray Chart',
+    'Runners','Pitch_Location_X','Pitch_Location_Y','Notes',
   ];
   const rows = pitches.map((p) => {
     const qocExport = p.outcome === "Fielder's Choice Out"
@@ -1855,19 +1862,27 @@ function exportCSV(pitches, game) {
       : (QOC_EXPORT[p.quality_of_contact] || p.quality_of_contact || '');
     const sprayExport = SPRAY_EXPORT[p.spray_chart] || p.spray_chart || '';
     return [
-      p.pitch_number,
-      `${p.half_inning === 'TOP' ? 'Top' : 'Bottom'} ${p.inning}`,
+      p.half_inning || '',
+      p.inning ?? '',
+      p.outs ?? '',
+      p.balls ?? '',
+      p.strikes ?? '',
+      p.count || '',
+      p.batter_team || '',
+      p.pitcher_team || '',
+      dateFormatted,
+      game?.home_team || '',
+      game?.away_team || '',
+      p.time_to_plate_man_on_first != null ? p.time_to_plate_man_on_first : '',
       p.batter || '',
-      p.batter_side || '',
       p.pitcher || '',
+      p.batter_side || '',
       p.pitcher_side || '',
       PITCH_TYPE_LABELS[p.pitch_type] || p.pitch_type || '',
       p.outcome || '',
-      `${p.balls}-${p.strikes}`,
-      normalizeRunners(p.runners),
       qocExport,
       sprayExport,
-      p.time_to_plate_man_on_first != null ? p.time_to_plate_man_on_first : '',
+      normalizeRunners(p.runners),
       p.pitch_location_x != null ? p.pitch_location_x : '',
       p.pitch_location_y != null ? p.pitch_location_y : '',
       p.notes || '',
