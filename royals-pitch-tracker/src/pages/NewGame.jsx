@@ -106,7 +106,7 @@ export default function NewGame() {
     const { data: { user } } = await supabase.auth.getUser();
     const { data, error: err } = await supabase
       .from('games')
-      .insert({ ...gameInfo, user_id: user.id })
+      .insert({ ...gameInfo, user_id: user.id, logged_by: user.email })
       .select()
       .single();
     if (err) {

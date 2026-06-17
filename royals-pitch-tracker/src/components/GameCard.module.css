@@ -24,6 +24,20 @@
   font-weight: 500;
 }
 
+.loggedBy {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.loggedByYou {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.loggedByNone {
+  color: var(--text-muted);
+}
+
 .num {
   font-variant-numeric: tabular-nums;
   text-align: right;

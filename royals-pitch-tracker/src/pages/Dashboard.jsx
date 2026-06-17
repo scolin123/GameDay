@@ -9,8 +9,12 @@ export default function Dashboard() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
+  const [currentEmail, setCurrentEmail] = useState('');
 
   useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentEmail(user?.email || '');
+    });
     loadGames();
   }, []);
 
@@ -67,6 +71,7 @@ export default function Dashboard() {
       <nav className={styles.nav}>
         <span className={styles.navBrand}>Guelph Royals Pitch Tracker</span>
         <div className={styles.navRight}>
+          {currentEmail && <span className={styles.navEmail}>{currentEmail}</span>}
           <button type="button" onClick={handleSignOut} className={styles.signOut}>
             Sign Out
           </button>
@@ -90,6 +95,7 @@ export default function Dashboard() {
                 <tr>
                   <th>Date</th>
                   <th>Matchup</th>
+                  <th>Logged By</th>
                   <th className={styles.numHeader}>Pitches</th>
                   <th className={styles.numHeader}>Innings</th>
                   <th className={styles.actionsHeader}>Actions</th>
@@ -97,7 +103,7 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {games.map((g) => (
-                  <GameCard key={g.id} game={g} />
+                  <GameCard key={g.id} game={g} currentEmail={currentEmail} />
                 ))}
               </tbody>
             </table>
