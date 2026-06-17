@@ -103,6 +103,15 @@
   color: var(--text-muted);
 }
 
+.sortableHeader {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortableHeader:hover {
+  color: var(--text-primary);
+}
+
 .numHeader {
   text-align: right;
 }

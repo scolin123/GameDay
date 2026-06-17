@@ -10,6 +10,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
   const [currentEmail, setCurrentEmail] = useState('');
+  const [sortBy, setSortBy] = useState('date');
+  const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -62,6 +64,29 @@ export default function Dashboard() {
     setLoading(false);
   }
 
+  function handleSort(col) {
+    if (sortBy === col) {
+      setSortAsc((a) => !a);
+    } else {
+      setSortBy(col);
+      setSortAsc(true);
+    }
+  }
+
+  const sortedGames = [...games].sort((a, b) => {
+    let av, bv;
+    if (sortBy === 'logged_by') {
+      av = (a.logged_by || '').toLowerCase();
+      bv = (b.logged_by || '').toLowerCase();
+    } else {
+      av = a.date || '';
+      bv = b.date || '';
+    }
+    if (av < bv) return sortAsc ? -1 : 1;
+    if (av > bv) return sortAsc ? 1 : -1;
+    return 0;
+  });
+
   async function handleSignOut() {
     await supabase.auth.signOut();
   }
@@ -93,16 +118,20 @@ export default function Dashboard() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Date</th>
+                  <th className={styles.sortableHeader} onClick={() => handleSort('date')}>
+                    Date {sortBy === 'date' ? (sortAsc ? '↑' : '↓') : ''}
+                  </th>
                   <th>Matchup</th>
-                  <th>Logged By</th>
+                  <th className={styles.sortableHeader} onClick={() => handleSort('logged_by')}>
+                    Logged By {sortBy === 'logged_by' ? (sortAsc ? '↑' : '↓') : ''}
+                  </th>
                   <th className={styles.numHeader}>Pitches</th>
                   <th className={styles.numHeader}>Innings</th>
                   <th className={styles.actionsHeader}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {games.map((g) => (
+                {sortedGames.map((g) => (
                   <GameCard key={g.id} game={g} currentEmail={currentEmail} />
                 ))}
               </tbody>
