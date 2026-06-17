@@ -1028,6 +1028,41 @@
   flex-shrink: 0;
 }
 
+.rosterEditBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 2px;
+  line-height: 1;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.rosterRow:hover .rosterEditBtn {
+  opacity: 0.45;
+}
+
+.rosterEditBtn:hover {
+  color: var(--accent);
+  opacity: 1 !important;
+}
+
+.rosterEditInput {
+  flex: 1;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 13px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  outline: none;
+  min-width: 0;
+}
+
 .rosterRemoveBtn {
   background: none;
   border: none;

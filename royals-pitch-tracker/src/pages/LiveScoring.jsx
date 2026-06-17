@@ -40,6 +40,7 @@ const PITCH_TYPE_LABELS = {
 
 const QOC_EXPORT = { GB: 'Ground Ball', LD: 'Line Drive', FB: 'Fly Ball', PU: 'Pop Up' };
 const SPRAY_EXPORT = { Pull: 'Pull', Straight: 'Straightaway', Oppo: 'Opposite Field' };
+const FC_QOC_OUTCOME = { GB: 'Groundout', LD: 'Lineout', FB: 'Flyout', PU: 'Popout' };
 
 const BALL_OUTCOMES = ['Ball', 'Hit By Pitch', 'Catcher Interference'];
 const STRIKE_OUTCOMES = ['Called Strike', 'Swinging Strike', 'Foul'];
@@ -145,6 +146,10 @@ export default function LiveScoring() {
 
   // Truncated out: same batter leads off the next time that team bats
   const [truncatedBatterForNext, setTruncatedBatterForNext] = useState(null);
+
+  // Roster inline edit
+  const [rosterEditId, setRosterEditId] = useState(null);
+  const [rosterEditValue, setRosterEditValue] = useState('');
 
   // Timer for time to plate (shown only with runner on 1st only)
   const [timerRunning, setTimerRunning] = useState(false);
@@ -648,6 +653,27 @@ export default function LiveScoring() {
     setRosterDragOver(null);
   }
 
+  async function handleRosterRename(player, newName) {
+    const name = newName.trim();
+    setRosterEditId(null);
+    if (!name || name === player.player_name) return;
+    await supabase.from('rosters').update({ player_name: name }).eq('id', player.id);
+    const updated = { ...player, player_name: name };
+    setRoster((prev) => prev.map((p) => p.id === player.id ? updated : p));
+    if (player.player_role === 'pinch_hitter') {
+      setPhMap((prev) => ({
+        ...prev,
+        [player.team]: { ...(prev[player.team] || {}), [player.batting_order]: updated },
+      }));
+    } else if (player.player_role === 'pitcher') {
+      if (player.team === game?.away_team) setAwayPitchers((prev) => prev.map((p) => p.id === player.id ? updated : p));
+      else setHomePitchers((prev) => prev.map((p) => p.id === player.id ? updated : p));
+    } else {
+      if (player.team === game?.away_team) setAwayBatters((prev) => prev.map((p) => p.id === player.id ? updated : p));
+      else setHomeBatters((prev) => prev.map((p) => p.id === player.id ? updated : p));
+    }
+  }
+
   async function handleRosterRemove(player) {
     if (player.id && typeof player.id !== 'number') {
       await supabase.from('rosters').delete().eq('id', player.id);
@@ -1038,6 +1064,7 @@ export default function LiveScoring() {
               locationX={locationX}
               locationY={locationY}
               batterSide={batterSide}
+              previousPitches={atBatPitches}
             />
           </div>
 
@@ -1370,16 +1397,12 @@ export default function LiveScoring() {
                       className={`${styles.outcomeRowBtn} ${outcome === o ? styles.ballBtnSelected : ''}`}
                       onClick={() => setOutcome(o)}>{o}</button>
                   ))}
-                  {balls === 3 && (
-                    <>
-                      <button type="button"
-                        className={`${styles.outcomeRowBtn} ${outcome === 'Walk' ? styles.ballBtnSelected : ''}`}
-                        onClick={() => setOutcome('Walk')}>Walk</button>
-                      <button type="button"
-                        className={`${styles.outcomeRowBtn} ${outcome === 'Intentional Walk' ? styles.ballBtnSelected : ''}`}
-                        onClick={() => setOutcome('Intentional Walk')}>Intentional Walk</button>
-                    </>
-                  )}
+                  <button type="button"
+                    className={`${styles.outcomeRowBtn} ${outcome === 'Walk' ? styles.ballBtnSelected : ''}`}
+                    onClick={() => setOutcome('Walk')}>Walk</button>
+                  <button type="button"
+                    className={`${styles.outcomeRowBtn} ${outcome === 'Intentional Walk' ? styles.ballBtnSelected : ''}`}
+                    onClick={() => setOutcome('Intentional Walk')}>Intentional Walk</button>
                 </div>
 
                 <div className={styles.outcomeSection}>
@@ -1660,16 +1683,55 @@ export default function LiveScoring() {
                               >
                                 <span className={styles.rosterDragHandle} title="Drag to reorder">⠿</span>
                                 <span className={styles.rosterOrder}>{order}</span>
-                                <span className={`${styles.rosterName} ${ph ? styles.rosterNameReplaced : ''}`}>{p.player_name}</span>
-                                {p.bats && !ph && <span className={styles.rosterSide}>{p.bats}</span>}
+                                {rosterEditId === p.id ? (
+                                  <input
+                                    className={styles.rosterEditInput}
+                                    value={rosterEditValue}
+                                    autoFocus
+                                    onChange={(e) => setRosterEditValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleRosterRename(p, rosterEditValue);
+                                      if (e.key === 'Escape') setRosterEditId(null);
+                                    }}
+                                    onBlur={() => handleRosterRename(p, rosterEditValue)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                ) : (
+                                  <>
+                                    <span className={`${styles.rosterName} ${ph ? styles.rosterNameReplaced : ''}`}>{p.player_name}</span>
+                                    {p.bats && !ph && <span className={styles.rosterSide}>{p.bats}</span>}
+                                    <button type="button" className={styles.rosterEditBtn}
+                                      onClick={(e) => { e.stopPropagation(); setRosterEditId(p.id); setRosterEditValue(p.player_name); }}
+                                      title="Edit name">✎</button>
+                                  </>
+                                )}
                                 <button type="button" className={styles.rosterRemoveBtn} onClick={() => handleRosterRemove(p)} title="Remove">×</button>
                               </div>
                               {ph && (
                                 <div className={styles.rosterRowPH}>
                                   <span className={styles.phConnectorRoster}>└</span>
-                                  <span className={styles.rosterName}>{ph.player_name}</span>
-                                  {ph.bats && <span className={styles.rosterSide}>{ph.bats}</span>}
-                                  <span className={styles.phBadgeRoster}>PH</span>
+                                  {rosterEditId === ph.id ? (
+                                    <input
+                                      className={styles.rosterEditInput}
+                                      value={rosterEditValue}
+                                      autoFocus
+                                      onChange={(e) => setRosterEditValue(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleRosterRename(ph, rosterEditValue);
+                                        if (e.key === 'Escape') setRosterEditId(null);
+                                      }}
+                                      onBlur={() => handleRosterRename(ph, rosterEditValue)}
+                                    />
+                                  ) : (
+                                    <>
+                                      <span className={styles.rosterName}>{ph.player_name}</span>
+                                      {ph.bats && <span className={styles.rosterSide}>{ph.bats}</span>}
+                                      <span className={styles.phBadgeRoster}>PH</span>
+                                      <button type="button" className={styles.rosterEditBtn}
+                                        onClick={() => { setRosterEditId(ph.id); setRosterEditValue(ph.player_name); }}
+                                        title="Edit name">✎</button>
+                                    </>
+                                  )}
                                   <button type="button" className={styles.rosterRemoveBtn} onClick={() => handleRosterRemove(ph)} title="Remove PH">×</button>
                                 </div>
                               )}
@@ -1686,9 +1748,28 @@ export default function LiveScoring() {
                           if (order <= 9) return null;
                           return (
                             <div key={p.id} className={styles.rosterRow}>
-                              <span className={styles.rosterName}>{p.player_name}</span>
-                              {p.bats && <span className={styles.rosterSide}>{p.bats}</span>}
-                              <span className={styles.rosterSide} style={{ color: 'var(--text-muted)' }}>Bench</span>
+                              {rosterEditId === p.id ? (
+                                <input
+                                  className={styles.rosterEditInput}
+                                  value={rosterEditValue}
+                                  autoFocus
+                                  onChange={(e) => setRosterEditValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleRosterRename(p, rosterEditValue);
+                                    if (e.key === 'Escape') setRosterEditId(null);
+                                  }}
+                                  onBlur={() => handleRosterRename(p, rosterEditValue)}
+                                />
+                              ) : (
+                                <>
+                                  <span className={styles.rosterName}>{p.player_name}</span>
+                                  {p.bats && <span className={styles.rosterSide}>{p.bats}</span>}
+                                  <span className={styles.rosterSide} style={{ color: 'var(--text-muted)' }}>Bench</span>
+                                  <button type="button" className={styles.rosterEditBtn}
+                                    onClick={() => { setRosterEditId(p.id); setRosterEditValue(p.player_name); }}
+                                    title="Edit name">✎</button>
+                                </>
+                              )}
                               <button type="button" className={styles.rosterRemoveBtn} onClick={() => handleRosterRemove(p)} title="Remove">×</button>
                             </div>
                           );
@@ -1769,8 +1850,27 @@ export default function LiveScoring() {
                         )}
                         {pitchers.map((p) => (
                           <div key={p.id} className={styles.rosterRow}>
-                            <span className={styles.rosterName}>{p.player_name}</span>
-                            {p.throws && <span className={styles.rosterSide}>{p.throws}</span>}
+                            {rosterEditId === p.id ? (
+                              <input
+                                className={styles.rosterEditInput}
+                                value={rosterEditValue}
+                                autoFocus
+                                onChange={(e) => setRosterEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleRosterRename(p, rosterEditValue);
+                                  if (e.key === 'Escape') setRosterEditId(null);
+                                }}
+                                onBlur={() => handleRosterRename(p, rosterEditValue)}
+                              />
+                            ) : (
+                              <>
+                                <span className={styles.rosterName}>{p.player_name}</span>
+                                {p.throws && <span className={styles.rosterSide}>{p.throws}</span>}
+                                <button type="button" className={styles.rosterEditBtn}
+                                  onClick={() => { setRosterEditId(p.id); setRosterEditValue(p.player_name); }}
+                                  title="Edit name">✎</button>
+                              </>
+                            )}
                             <button type="button" className={styles.rosterRemoveBtn} onClick={() => handleRosterRemove(p)} title="Remove">×</button>
                           </div>
                         ))}
@@ -1857,9 +1957,10 @@ function exportCSV(pitches, game) {
     'Runners','Pitch_Location_X','Pitch_Location_Y','Notes',
   ];
   const rows = pitches.map((p) => {
-    const qocExport = p.outcome === "Fielder's Choice Out"
-      ? 'Ground Ball'
-      : (QOC_EXPORT[p.quality_of_contact] || p.quality_of_contact || '');
+    const qocExport = QOC_EXPORT[p.quality_of_contact] || p.quality_of_contact || '';
+    const outcomeExport = p.outcome === "Fielder's Choice Out"
+      ? (FC_QOC_OUTCOME[p.quality_of_contact] || 'Groundout')
+      : (p.outcome || '');
     const sprayExport = SPRAY_EXPORT[p.spray_chart] || p.spray_chart || '';
     return [
       p.half_inning || '',
@@ -1879,7 +1980,7 @@ function exportCSV(pitches, game) {
       p.batter_side || '',
       p.pitcher_side || '',
       PITCH_TYPE_LABELS[p.pitch_type] || p.pitch_type || '',
-      p.outcome || '',
+      outcomeExport,
       qocExport,
       sprayExport,
       normalizeRunners(p.runners),

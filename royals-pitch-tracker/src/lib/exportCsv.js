@@ -1,5 +1,7 @@
 import Papa from 'papaparse';
 
+const FC_QOC_OUTCOME = { GB: 'Groundout', LD: 'Lineout', FB: 'Flyout', PU: 'Popout' };
+
 const QOC_FULL = {
   GB: 'Ground Ball',
   LD: 'Line Drive',
@@ -77,10 +79,12 @@ export async function exportGameCsv(gameId, supabase) {
     'Batter_Side': safe(p.batter_side),
     'Pitcher_Side': safe(p.pitcher_side),
     'Pitch_Type': p.pitch_type ? (PITCH_TYPE_FULL[p.pitch_type] || p.pitch_type) : '',
-    'Outcome': safe(p.outcome),
+    'Outcome': p.outcome === "Fielder's Choice Out"
+      ? (FC_QOC_OUTCOME[p.quality_of_contact] || 'Groundout')
+      : safe(p.outcome),
     'Quality of Contact': p.quality_of_contact ? (QOC_FULL[p.quality_of_contact] || p.quality_of_contact) : '',
     'Spray Chart': p.spray_chart ? (SPRAY_FULL[p.spray_chart] || p.spray_chart) : '',
-    'Runners': safe(p.runners),
+    'Runners': (p.runners || '000').toString().padStart(3, '0'),
     'Pitch_Location_X': safe(p.pitch_location_x),
     'Pitch_Location_Y': safe(p.pitch_location_y),
     'Notes': safe(p.notes),

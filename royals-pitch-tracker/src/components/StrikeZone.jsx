@@ -50,7 +50,7 @@ function getSvgPoint(svg, e) {
 }
 
 
-export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locationX, locationY, batterSide }) {
+export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locationX, locationY, batterSide, previousPitches = [] }) {
   const [dot, setDot] = useState(
     locationX != null && locationY != null
       ? normalizedToSvg(locationX, locationY)
@@ -83,11 +83,6 @@ export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locat
   }
 
   const color = PITCH_COLORS[pitchType] || PITCH_COLORS.OT;
-
-  const COORD_W = 112;
-  const COORD_H = 22;
-  const COORD_X = SVG_W - COORD_W - 4;
-  const COORD_Y = SVG_H - COORD_H - 4;
   const hoverCoords = hover ? svgToDisplayCoords(hover.svgX, hover.svgY) : null;
 
   return (
@@ -124,22 +119,29 @@ export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locat
       <text x="60"        y={SVG_H / 2 + 4} textAnchor="middle" fontSize="14" fill="#475569" fontFamily="IBM Plex Sans, sans-serif" fontWeight="800" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>IN</text>
       <text x={SVG_W - 60} y={SVG_H / 2 + 4} textAnchor="middle" fontSize="14" fill="#475569" fontFamily="IBM Plex Sans, sans-serif" fontWeight="800" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>OUT</text>
 
-      {/* Coordinate display — fixed bottom-right corner */}
+      {/* Previous at-bat pitch dots */}
+      {previousPitches.map((p, i) => {
+        if (p.pitch_location_x == null || p.pitch_location_y == null) return null;
+        const { svgX, svgY } = normalizedToSvg(p.pitch_location_x, p.pitch_location_y);
+        const dotColor = PITCH_COLORS[p.pitch_type] || PITCH_COLORS.OT;
+        return (
+          <circle key={i} cx={svgX} cy={svgY} r={5} fill={dotColor} fillOpacity="0.55" stroke="white" strokeWidth="1" />
+        );
+      })}
+
+      {/* Coordinate display — discreet bottom-right */}
       {hoverCoords && (
-        <>
-          <rect x={COORD_X} y={COORD_Y} width={COORD_W} height={COORD_H} rx="3" fill="rgba(15,23,42,0.82)" />
-          <text
-            x={COORD_X + COORD_W / 2}
-            y={COORD_Y + 14}
-            textAnchor="middle"
-            fontSize="11"
-            fill="white"
-            fontFamily="'IBM Plex Mono', monospace"
-            style={{ pointerEvents: 'none', userSelect: 'none' }}
-          >
-            {hoverCoords.x.toFixed(4)}, {hoverCoords.y.toFixed(4)}
-          </text>
-        </>
+        <text
+          x={SVG_W - 6}
+          y={SVG_H - 6}
+          textAnchor="end"
+          fontSize="9"
+          fill="#94a3b8"
+          fontFamily="'IBM Plex Mono', monospace"
+          style={{ pointerEvents: 'none', userSelect: 'none' }}
+        >
+          {hoverCoords.x.toFixed(4)}, {hoverCoords.y.toFixed(4)}
+        </text>
       )}
 
       {/* Baseball dot — click to open outcome panel */}
