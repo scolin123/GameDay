@@ -136,7 +136,7 @@ export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locat
           y={SVG_H - 6}
           textAnchor="end"
           fontSize="8"
-          fill="#cbd5e1"
+          fill="#000000"
           fillOpacity="0.7"
           fontFamily="'IBM Plex Mono', monospace"
           style={{ pointerEvents: 'none', userSelect: 'none' }}
