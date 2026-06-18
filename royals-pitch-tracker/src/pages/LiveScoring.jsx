@@ -334,7 +334,8 @@ export default function LiveScoring() {
 
   // Pitcher game stats derived from all pitches for this game
   const pitcherStats = (() => {
-    const forPitcher = allPitches.filter((p) => p.pitcher === currentPitcher?.player_name);
+    const pitcherName = currentPitcher?.player_name || pitcherInput.trim();
+    const forPitcher = allPitches.filter((p) => p.pitcher === pitcherName);
     const total = forPitcher.length;
     const strikeCount = forPitcher.filter((p) =>
       ['Called Strike', 'Swinging Strike', 'Foul', 'Strikeout Swinging', 'Strikeout Looking'].includes(p.outcome)

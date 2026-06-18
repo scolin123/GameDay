@@ -84,7 +84,7 @@ export async function exportGameCsv(gameId, supabase) {
       : safe(p.outcome),
     'Quality of Contact': p.quality_of_contact ? (QOC_FULL[p.quality_of_contact] || p.quality_of_contact) : '',
     'Spray Chart': p.spray_chart ? (SPRAY_FULL[p.spray_chart] || p.spray_chart) : '',
-    'Runners': (p.runners || '000').toString().padStart(3, '0'),
+    'Runners': `'${(p.runners || '000').toString().padStart(3, '0')}`,
     'Pitch_Location_X': safe(p.pitch_location_x),
     'Pitch_Location_Y': safe(p.pitch_location_y),
     'Notes': safe(p.notes),
