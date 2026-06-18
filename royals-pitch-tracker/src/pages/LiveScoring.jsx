@@ -1987,7 +1987,7 @@ function exportCSV(pitches, game) {
       outcomeExport,
       qocExport,
       sprayExport,
-      normalizeRunners(p.runners),
+      `'${normalizeRunners(p.runners)}`,
       p.pitch_location_x != null ? p.pitch_location_x : '',
       p.pitch_location_y != null ? p.pitch_location_y : '',
       p.notes || '',
