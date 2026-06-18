@@ -67,7 +67,7 @@ export async function exportGameCsv(gameId, supabase) {
     'Outs': safe(p.outs),
     'Balls': safe(p.balls),
     'Strikes': safe(p.strikes),
-    'Count': safe(p.count),
+    'Count': p.count ? `'${p.count}` : '',
     'Batter_Team': safe(p.batter_team),
     'Pitcher_Team': safe(p.pitcher_team),
     'Date': dateFormatted,
@@ -78,7 +78,7 @@ export async function exportGameCsv(gameId, supabase) {
     'Pitcher': safe(p.pitcher),
     'Batter_Side': safe(p.batter_side),
     'Pitcher_Side': safe(p.pitcher_side),
-    'Pitch_Type': p.pitch_type ? (PITCH_TYPE_FULL[p.pitch_type] || p.pitch_type) : '',
+    'Pitch_Type': (p.pitch_type && p.pitch_type !== 'UN') ? (PITCH_TYPE_FULL[p.pitch_type] || p.pitch_type) : '',
     'Outcome': p.outcome === "Fielder's Choice Out"
       ? (FC_QOC_OUTCOME[p.quality_of_contact] || 'Groundout')
       : safe(p.outcome),

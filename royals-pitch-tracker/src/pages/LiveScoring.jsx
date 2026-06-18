@@ -128,6 +128,7 @@ export default function LiveScoring() {
   const [rosterDragOver, setRosterDragOver] = useState(null); // idx
   const [rosterAddInputs, setRosterAddInputs] = useState({});
   const [gamePitches, setGamePitches] = useState([]);
+  const [allPitches, setAllPitches] = useState([]);
   const [pendingFlip, setPendingFlip] = useState(null); // { nextHalf, nextInning, battingTeam, nextBatterIdx }
 
   // Pitcher memory: persists per team across inning flips
@@ -186,7 +187,7 @@ export default function LiveScoring() {
     const [{ data: gameData }, { data: rosterData }, { data: pitchData }] = await Promise.all([
       supabase.from('games').select('*').eq('id', gameId).single(),
       supabase.from('rosters').select('*').eq('game_id', gameId).order('batting_order'),
-      supabase.from('pitches').select('*').eq('game_id', gameId).order('pitch_number', { ascending: false }).limit(20),
+      supabase.from('pitches').select('*').eq('game_id', gameId).order('pitch_number', { ascending: false }),
     ]);
 
     if (!gameData) { setLoading(false); return; }
@@ -244,6 +245,7 @@ export default function LiveScoring() {
     // Restore state from last pitch if any exist
     const pitches = pitchData || [];
     setRecentPitches(pitches.slice(0, 5));
+    setAllPitches(pitches);
     if (pitches.length > 0) {
       const last = pitches[0];
       setHalfInning(last.half_inning);
@@ -330,24 +332,22 @@ export default function LiveScoring() {
   const showInPlay = outcome && IN_PLAY_OUTCOMES.has(outcome);
   const showTimeToPlate = runners === '100';
 
-  // Pitcher game stats derived from recent pitches
-  const pitcherStats = recentPitches.length > 0
-    ? (() => {
-        // We'd need all pitches for accurate stats — simplify to "from loaded data"
-        const all = recentPitches;
-        const forPitcher = all.filter((p) => p.pitcher === currentPitcher?.player_name);
-        return {
-          pitches: forPitcher.length,
-          strikes: forPitcher.filter((p) =>
-            ['Called Strike', 'Swinging Strike', 'Foul', 'Strikeout Swinging', 'Strikeout Looking'].includes(p.outcome)
-          ).length,
-          bb: forPitcher.filter((p) => p.outcome === 'Walk').length,
-          k: forPitcher.filter((p) =>
-            p.outcome === 'Strikeout Swinging' || p.outcome === 'Strikeout Looking'
-          ).length,
-        };
-      })()
-    : { pitches: 0, strikes: 0, bb: 0, k: 0 };
+  // Pitcher game stats derived from all pitches for this game
+  const pitcherStats = (() => {
+    const forPitcher = allPitches.filter((p) => p.pitcher === currentPitcher?.player_name);
+    const total = forPitcher.length;
+    const strikeCount = forPitcher.filter((p) =>
+      ['Called Strike', 'Swinging Strike', 'Foul', 'Strikeout Swinging', 'Strikeout Looking'].includes(p.outcome)
+    ).length;
+    return {
+      pitches: total,
+      strikePct: total > 0 ? Math.round((strikeCount / total) * 100) : 0,
+      bb: forPitcher.filter((p) => p.outcome === 'Walk').length,
+      k: forPitcher.filter((p) =>
+        p.outcome === 'Strikeout Swinging' || p.outcome === 'Strikeout Looking'
+      ).length,
+    };
+  })();
 
   function resetForm() {
     setPitchType('');
@@ -464,6 +464,7 @@ export default function LiveScoring() {
     const newPitch = { ...pitchData, id: inserted.id };
     const newRecent = [newPitch, ...recentPitches].slice(0, 5);
     setRecentPitches(newRecent);
+    setAllPitches((prev) => [newPitch, ...prev]);
 
     // Update at-bat pitches
     const newAtBat = paEnded ? [] : [...atBatPitches, newPitch];
@@ -543,6 +544,7 @@ export default function LiveScoring() {
 
     const newRecent = recentPitches.slice(1);
     setRecentPitches(newRecent);
+    setAllPitches((prev) => prev.filter((p) => p.id !== last.id));
     setAtBatPitches((prev) => prev.filter((p) => p.id !== last.id));
   }
 
@@ -832,6 +834,7 @@ export default function LiveScoring() {
     const newOuts = Math.min(outs + outsAdded, 3);
     const newPitch = { ...pitchData, id: inserted.id };
     setRecentPitches((prev) => [newPitch, ...prev].slice(0, 5));
+    setAllPitches((prev) => [newPitch, ...prev]);
     setAtBatPitches((prev) => [...prev, newPitch]);
     setPitchNumber((n) => n + 1);
 
@@ -1163,8 +1166,8 @@ export default function LiveScoring() {
                 <span className={styles.statName}>P</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statValue}>{pitcherStats.strikes}</span>
-                <span className={styles.statName}>K%</span>
+                <span className={styles.statValue}>{pitcherStats.strikePct}%</span>
+                <span className={styles.statName}>STR%</span>
               </div>
               <div className={styles.statItem}>
                 <span className={styles.statValue}>{pitcherStats.bb}</span>
