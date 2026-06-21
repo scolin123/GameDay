@@ -18,14 +18,6 @@ export const OUT_OUTCOMES = new Set([
   'Batter Interference',
 ]);
 
-export const IN_PLAY_OUTCOMES = new Set([
-  'Single', 'Double', 'Triple', 'Home Run',
-  'Groundout', 'Flyout', 'Lineout', 'Popout',
-  'Sacrifice Fly', 'Sacrifice Bunt',
-  'Double Play', 'Triple Play',
-  "Fielder's Choice Out", "Fielder's Choice Safe",
-  'Error', 'Batter Interference',
-]);
 
 /**
  * Returns new { balls, strikes, paEnded, outsAdded } given current count and outcome.
@@ -80,39 +72,6 @@ export function advanceCount(balls, strikes, outcome) {
   return { balls, strikes, paEnded: false, outsAdded: 0 };
 }
 
-/**
- * Returns new runners string ('000'–'111') based on outcome and prior runners.
- * Complex situations left for scorer to adjust manually.
- */
-export function advanceRunners(runners, outcome) {
-  if (outcome === 'Walk' || outcome === 'Hit By Pitch') {
-    if (runners === '000') return '100';
-    if (runners === '100') return '110';
-    if (runners === '110') return '111';
-    if (runners === '010') return '110';
-    return runners; // manual
-  }
-  if (outcome === 'Single') return '1' + runners[1] + runners[2];
-  if (outcome === 'Double') return '0' + '2'[0] + runners[2]; // set 2nd, keep 3rd
-  // Actually: Double sets 020 but keep 3rd
-  // runners = r1 r2 r3
-  if (outcome === 'Double') {
-    return '0' + '1' + runners[2];
-  }
-  if (outcome === 'Triple') return '001';
-  if (outcome === 'Home Run') return '000';
-  if (outcome === 'Double Play') {
-    // clear one base
-    if (runners[0] === '1') return '0' + runners[1] + runners[2];
-    if (runners[1] === '1') return runners[0] + '0' + runners[2];
-    return runners[0] + runners[1] + '0';
-  }
-  return runners;
-}
-
-/**
- * Properly handle Double outcome separately.
- */
 export function advanceRunnersForOutcome(runners, outcome) {
   if (outcome === 'Walk' || outcome === 'Intentional Walk' || outcome === 'Hit By Pitch' || outcome === 'Catcher Interference' || outcome === 'Dropped Third Strike Swinging' || outcome === 'Dropped Third Strike Looking') {
     if (runners === '000') return '100';
@@ -149,8 +108,4 @@ export function advanceRunnersForOutcome(runners, outcome) {
     return '1' + runners[1] + runners[2];
   }
   return runners;
-}
-
-export function nextBatterIndex(currentIndex, rosterLength) {
-  return (currentIndex + 1) % rosterLength;
 }

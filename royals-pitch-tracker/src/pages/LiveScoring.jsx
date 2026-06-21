@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { advanceCount, advanceRunnersForOutcome, PA_ENDING_OUTCOMES, IN_PLAY_OUTCOMES } from '../lib/autoAdvance';
+import { advanceCount, advanceRunnersForOutcome, PA_ENDING_OUTCOMES } from '../lib/autoAdvance';
 import StrikeZone from '../components/StrikeZone';
 import PitchTypeButtons from '../components/PitchTypeButtons';
 import BaseDiamond from '../components/BaseDiamond';
@@ -15,22 +15,6 @@ const normalizeRunners = (r) => (r || '000').toString().padStart(3, '0');
 const QOC_OPTIONS = ['GB', 'LD', 'FB', 'PU'];
 const SPRAY_OPTIONS = ['Pull', 'Straight', 'Oppo'];
 
-const OUTCOME_ABBREV = {
-  'Single': '1B', 'Double': '2B', 'Triple': '3B', 'Home Run': 'HR',
-  'Strikeout Swinging': 'K', 'Strikeout Looking': 'Kl',
-  'Dropped Third Strike Swinging': 'K+', 'Dropped Third Strike Looking': 'Kl+',
-  'Walk': 'BB', 'Intentional Walk': 'IBB', 'Hit By Pitch': 'HBP',
-  'Groundout': 'GO', 'Flyout': 'FO', 'Lineout': 'LO', 'Popout': 'PO',
-  'Sacrifice Fly': 'SF', 'Sacrifice Bunt': 'SH',
-  'Double Play': 'DP', 'Triple Play': 'TP',
-  "Fielder's Choice Out": 'FCO', "Fielder's Choice Safe": 'FCS', 'Error': 'E',
-  'Catcher Interference': 'CI', 'Batter Interference': 'BI',
-};
-
-const NOT_AB_OUTCOMES = new Set([
-  'Walk', 'Intentional Walk', 'Hit By Pitch',
-  'Sacrifice Fly', 'Sacrifice Bunt', 'Catcher Interference',
-]);
 
 const PITCH_TYPE_LABELS = {
   FB: 'Fastball', OS: 'Offspeed', CB: 'Curveball', SL: 'Slider',
@@ -329,7 +313,6 @@ export default function LiveScoring() {
   const currentBatter = currentBatters[currentBatterIdx] || null;
   const pitchingTeamPitchers = halfInning === 'TOP' ? homePitchers : awayPitchers;
 
-  const showInPlay = outcome && IN_PLAY_OUTCOMES.has(outcome);
   const showTimeToPlate = runners === '100';
 
   // Pitcher game stats derived from all pitches for this game

@@ -24,11 +24,7 @@ export default function Dashboard() {
     setLoading(true);
     const { data, error } = await supabase
       .from('games')
-      .select(`
-        *,
-        pitches(count),
-        rosters(count)
-      `)
+      .select('*, pitches(count)')
       .order('date', { ascending: false });
 
     if (error) {
@@ -37,28 +33,23 @@ export default function Dashboard() {
       return;
     }
 
-    // Compute pitch counts and inning counts
-    const enriched = await Promise.all(
-      (data || []).map(async (g) => {
-        const { count: pitchCount } = await supabase
-          .from('pitches')
-          .select('*', { count: 'exact', head: true })
-          .eq('game_id', g.id);
+    const gameIds = (data || []).map((g) => g.id);
+    const { data: inningRows } = await supabase
+      .from('pitches')
+      .select('game_id, inning')
+      .in('game_id', gameIds)
+      .order('inning', { ascending: false });
 
-        const { data: innings } = await supabase
-          .from('pitches')
-          .select('inning')
-          .eq('game_id', g.id)
-          .order('inning', { ascending: false })
-          .limit(1);
+    const maxInningByGame = {};
+    (inningRows || []).forEach(({ game_id, inning }) => {
+      if (!(game_id in maxInningByGame)) maxInningByGame[game_id] = inning;
+    });
 
-        return {
-          ...g,
-          pitch_count: pitchCount ?? 0,
-          inning_count: innings?.[0]?.inning ?? '—',
-        };
-      })
-    );
+    const enriched = (data || []).map((g) => ({
+      ...g,
+      pitch_count: g.pitches?.[0]?.count ?? 0,
+      inning_count: maxInningByGame[g.id] ?? '—',
+    }));
 
     setGames(enriched);
     setLoading(false);

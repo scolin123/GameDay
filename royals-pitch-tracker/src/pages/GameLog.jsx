@@ -13,13 +13,16 @@ const PITCH_TYPE_COLORS = {
   CH: '#9333ea',
   CT: '#ca8a04',
   SK: '#0891b2',
+  SV: '#7c3aed',
+  SW: '#db2777',
+  SP: '#059669',
   OT: '#64748b',
   UN: '#94a3b8',
 };
 
 const PITCH_TYPE_LABELS = {
   FB: 'Fastball', OS: 'Offspeed', CB: 'Curveball', SL: 'Slider',
-  CH: 'Changeup', CT: 'Cutter', SK: 'Sinker', OT: 'Other', UN: 'Unknown',
+  CH: 'Changeup', CT: 'Cutter', SK: 'Sinker', SV: 'Slurve', SW: 'Sweeper', SP: 'Splitter', OT: 'Other', UN: 'Unknown',
 };
 
 const BALL_OUTCOMES = new Set(['Ball', 'Walk', 'Hit By Pitch']);
@@ -42,15 +45,19 @@ function Badge({ label, color }) {
   );
 }
 
-const PITCH_TYPE_OPTIONS = ['FB', 'OS', 'CB', 'SL', 'CH', 'CT', 'SK', 'OT', 'UN'];
+const PITCH_TYPE_OPTIONS = ['FB', 'OS', 'CB', 'SL', 'CH', 'CT', 'SK', 'SV', 'SW', 'SP', 'OT', 'UN'];
 const OUTCOME_OPTIONS = [
-  'Ball', 'Walk', 'Hit By Pitch',
+  'Ball', 'Walk', 'Intentional Walk', 'Hit By Pitch', 'Catcher Interference',
   'Called Strike', 'Swinging Strike', 'Foul',
-  'Single', 'Double', 'Triple', 'Home Run',
-  'Groundout', 'Flyout', 'Lineout',
   'Strikeout Swinging', 'Strikeout Looking',
+  'Dropped Third Strike Swinging', 'Dropped Third Strike Looking',
+  'Single', 'Double', 'Triple', 'Home Run',
+  'Groundout', 'Flyout', 'Lineout', 'Popout',
   'Sacrifice Fly', 'Sacrifice Bunt',
-  'Double Play', "Fielder's Choice", 'Error',
+  'Double Play', 'Triple Play',
+  "Fielder's Choice Out", "Fielder's Choice Safe",
+  'Error', 'Batter Interference',
+  'Pickoff', 'Caught Stealing', 'Truncated Out', 'Additional Out',
 ];
 const QOC_OPTIONS = ['', 'GB', 'LD', 'FB', 'PU'];
 const SPRAY_OPTIONS = ['', 'Pull', 'Straight', 'Oppo'];
