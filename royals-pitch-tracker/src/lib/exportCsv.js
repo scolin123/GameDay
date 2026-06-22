@@ -79,8 +79,8 @@ export async function exportGameCsv(gameId, supabase) {
     'Batter_Side': safe(p.batter_side),
     'Pitcher_Side': safe(p.pitcher_side),
     'Pitch_Type': (p.pitch_type && p.pitch_type !== 'UN') ? (PITCH_TYPE_FULL[p.pitch_type] || p.pitch_type) : '',
-    'Outcome': p.outcome === "Fielder's Choice Out"
-      ? (FC_QOC_OUTCOME[p.quality_of_contact] || 'Groundout')
+    'Outcome': (p.outcome === "Fielder's Choice Out" || p.outcome === "Fielder's Choice Safe")
+      ? 'Groundout'
       : safe(p.outcome),
     'Quality of Contact': p.quality_of_contact ? (QOC_FULL[p.quality_of_contact] || p.quality_of_contact) : '',
     'Spray Chart': p.spray_chart ? (SPRAY_FULL[p.spray_chart] || p.spray_chart) : '',

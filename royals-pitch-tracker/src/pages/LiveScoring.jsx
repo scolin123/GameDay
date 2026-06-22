@@ -1945,8 +1945,8 @@ function exportCSV(pitches, game) {
   ];
   const rows = pitches.map((p) => {
     const qocExport = QOC_EXPORT[p.quality_of_contact] || p.quality_of_contact || '';
-    const outcomeExport = p.outcome === "Fielder's Choice Out"
-      ? (FC_QOC_OUTCOME[p.quality_of_contact] || 'Groundout')
+    const outcomeExport = (p.outcome === "Fielder's Choice Out" || p.outcome === "Fielder's Choice Safe")
+      ? 'Groundout'
       : (p.outcome || '');
     const sprayExport = SPRAY_EXPORT[p.spray_chart] || p.spray_chart || '';
     return [

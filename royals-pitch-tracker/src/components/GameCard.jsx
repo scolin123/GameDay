@@ -17,7 +17,7 @@ export default function GameCard({ game, currentEmail }) {
       <td className={styles.loggedBy}>
         {game.logged_by
           ? game.logged_by === currentEmail
-            ? <span className={styles.loggedByYou}>You</span>
+            ? <span className={styles.loggedByYou}>{currentEmail}</span>
             : game.logged_by.split('@')[0]
           : <span className={styles.loggedByNone}>—</span>}
       </td>
