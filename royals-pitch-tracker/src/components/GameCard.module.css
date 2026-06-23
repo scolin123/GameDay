@@ -22,6 +22,7 @@
 
 .matchup {
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .loggedBy {
@@ -42,6 +43,7 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
   color: var(--text-secondary) !important;
+  padding: 0 8px !important;
 }
 
 .actions {
@@ -51,7 +53,7 @@
 
 .actionBtn {
   display: inline-block;
-  padding: 4px 10px;
+  padding: 4px 8px;
   font-size: 13px;
   border: 1px solid var(--border-strong);
   border-radius: 4px;
@@ -64,4 +66,33 @@
 
 .actionBtn:hover {
   background: var(--bg-elevated);
+}
+
+.statusCell {
+  white-space: nowrap;
+  border-left: 1px solid var(--border);
+  padding-left: 12px !important;
+}
+
+.statusBtn {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-right: 3px;
+  text-decoration: none;
+  transition: border-color 0.1s, color 0.1s;
+}
+
+.statusBtn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.statusBtnActive {
+  color: #fff !important;
 }

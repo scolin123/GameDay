@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { STATUS, STATUS_LABEL, STATUS_COLOR } from '../lib/gameStatus';
 import GameCard from '../components/GameCard';
 import Toast from '../components/Toast';
 import styles from './Dashboard.module.css';
+
+const FILTER_STATUSES = [STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.COMPLETED_UPLOADED];
+
+const ADMIN_EMAILS = ['colin@gordshier.com', 'colin@shier.ca', 'christiansturgeon06@gmail.com'];
 
 export default function Dashboard() {
   const [games, setGames] = useState([]);
@@ -12,6 +17,7 @@ export default function Dashboard() {
   const [currentEmail, setCurrentEmail] = useState('');
   const [sortBy, setSortBy] = useState('date');
   const [sortAsc, setSortAsc] = useState(false);
+  const [statusFilter, setStatusFilter] = useState(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -24,7 +30,7 @@ export default function Dashboard() {
     setLoading(true);
     const { data, error } = await supabase
       .from('games')
-      .select('*, pitches(count)')
+      .select('*')
       .order('date', { ascending: false });
 
     if (error) {
@@ -34,20 +40,27 @@ export default function Dashboard() {
     }
 
     const gameIds = (data || []).map((g) => g.id);
-    const { data: inningRows } = await supabase
+
+    const { data: pitchRows, error: pitchErr } = await supabase
       .from('pitches')
       .select('game_id, inning')
-      .in('game_id', gameIds)
-      .order('inning', { ascending: false });
+      .in('game_id', gameIds.length > 0 ? gameIds : ['00000000-0000-0000-0000-000000000000'])
+      .limit(10000);
 
+    if (pitchErr) console.error('Pitch fetch error:', pitchErr.message);
+
+    const pitchCountByGame = {};
     const maxInningByGame = {};
-    (inningRows || []).forEach(({ game_id, inning }) => {
-      if (!(game_id in maxInningByGame)) maxInningByGame[game_id] = inning;
+    (pitchRows || []).forEach(({ game_id, inning }) => {
+      pitchCountByGame[game_id] = (pitchCountByGame[game_id] || 0) + 1;
+      if (maxInningByGame[game_id] === undefined || inning > maxInningByGame[game_id]) {
+        maxInningByGame[game_id] = inning;
+      }
     });
 
     const enriched = (data || []).map((g) => ({
       ...g,
-      pitch_count: g.pitches?.[0]?.count ?? 0,
+      pitch_count: pitchCountByGame[g.id] ?? 0,
       inning_count: maxInningByGame[g.id] ?? '—',
     }));
 
@@ -64,6 +77,10 @@ export default function Dashboard() {
     }
   }
 
+  function handleStatusChange(id, newStatus) {
+    setGames((prev) => prev.map((g) => g.id === id ? { ...g, status: newStatus } : g));
+  }
+
   const sortedGames = [...games].sort((a, b) => {
     let av, bv;
     if (sortBy === 'logged_by') {
@@ -77,6 +94,10 @@ export default function Dashboard() {
     if (av > bv) return sortAsc ? 1 : -1;
     return 0;
   });
+
+  const visibleGames = statusFilter
+    ? sortedGames.filter((g) => (g.status || STATUS.IN_PROGRESS) === statusFilter)
+    : sortedGames;
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -100,10 +121,38 @@ export default function Dashboard() {
           <Link to="/games/new" className={styles.newGameBtn}>New Game</Link>
         </div>
 
+        {ADMIN_EMAILS.includes(currentEmail) && (
+          <div className={styles.filterRow}>
+            <button
+              type="button"
+              className={`${styles.filterBtn} ${statusFilter === null ? styles.filterBtnActive : ''}`}
+              onClick={() => setStatusFilter(null)}
+            >
+              All
+            </button>
+            {FILTER_STATUSES.map((s) => {
+              const isActive = statusFilter === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  className={`${styles.filterBtn} ${isActive ? styles.filterBtnActive : ''}`}
+                  style={isActive ? { background: STATUS_COLOR[s], borderColor: STATUS_COLOR[s], color: '#fff' } : undefined}
+                  onClick={() => setStatusFilter(isActive ? null : s)}
+                >
+                  {STATUS_LABEL[s]}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {loading ? (
           <p className={styles.loading}>Loading...</p>
         ) : games.length === 0 ? (
           <p className={styles.empty}>No games yet. Create one above.</p>
+        ) : statusFilter && visibleGames.length === 0 ? (
+          <p className={styles.filterEmpty}>No {STATUS_LABEL[statusFilter].toLowerCase()} games.</p>
         ) : (
           <div className={styles.tableWrap}>
             <table className={styles.table}>
@@ -119,11 +168,20 @@ export default function Dashboard() {
                   <th className={styles.numHeader}>Pitches</th>
                   <th className={styles.numHeader}>Innings</th>
                   <th className={styles.actionsHeader}>Actions</th>
+                  {ADMIN_EMAILS.includes(currentEmail) && (
+                    <th className={styles.statusHeader}>Status</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {sortedGames.map((g) => (
-                  <GameCard key={g.id} game={g} currentEmail={currentEmail} />
+                {visibleGames.map((g) => (
+                  <GameCard
+                    key={g.id}
+                    game={g}
+                    currentEmail={currentEmail}
+                    onStatusChange={handleStatusChange}
+                    isAdmin={ADMIN_EMAILS.includes(currentEmail)}
+                  />
                 ))}
               </tbody>
             </table>

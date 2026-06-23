@@ -43,7 +43,7 @@
 }
 
 .content {
-  max-width: 960px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 32px 24px;
 }
@@ -79,7 +79,7 @@
 .tableWrap {
   border: 1px solid var(--border);
   border-radius: 4px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .table {
@@ -114,8 +114,51 @@
 
 .numHeader {
   text-align: right;
+  padding: 0 8px !important;
 }
 
 .actionsHeader {
   text-align: right;
+}
+
+.statusHeader {
+  border-left: 1px solid var(--border);
+  padding-left: 20px !important;
+}
+
+.filterRow {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.filterBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.filterBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.filterBtnActive {
+  /* color/background/border set via inline style per status */
+}
+
+.filterEmpty {
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 8px 0;
 }

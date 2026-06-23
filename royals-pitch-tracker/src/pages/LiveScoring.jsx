@@ -168,12 +168,21 @@ export default function LiveScoring() {
 
   async function loadGameData() {
     setLoading(true);
-    const [{ data: gameData }, { data: rosterData }, { data: pitchData }] = await Promise.all([
+    const [
+      { data: gameData, error: gameErr },
+      { data: rosterData },
+      { data: pitchData },
+    ] = await Promise.all([
       supabase.from('games').select('*').eq('id', gameId).single(),
       supabase.from('rosters').select('*').eq('game_id', gameId).order('batting_order'),
       supabase.from('pitches').select('*').eq('game_id', gameId).order('pitch_number', { ascending: false }),
     ]);
 
+    if (gameErr) {
+      setToast(`Failed to load game: ${gameErr.message}`);
+      setLoading(false);
+      return;
+    }
     if (!gameData) { setLoading(false); return; }
     setGame(gameData);
 
@@ -848,8 +857,9 @@ export default function LiveScoring() {
     setSubmitting(false);
   }
 
-  function handleEndGame() {
-    navigate(`/games/${gameId}`);
+  async function handleEndGame() {
+    await supabase.from('games').update({ status: 'completed' }).eq('id', gameId);
+    navigate('/');
   }
 
   function handleContinueGame() {
