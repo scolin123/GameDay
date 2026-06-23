@@ -5,6 +5,7 @@ import { STATUS, STATUS_LABEL, STATUS_COLOR } from '../lib/gameStatus';
 import GameCard from '../components/GameCard';
 import Toast from '../components/Toast';
 import styles from './Dashboard.module.css';
+import deleteStyles from './DeleteConfirmModal.module.css';
 
 const FILTER_STATUSES = [STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.COMPLETED_UPLOADED];
 
@@ -18,6 +19,8 @@ export default function Dashboard() {
   const [sortBy, setSortBy] = useState('date');
   const [sortAsc, setSortAsc] = useState(false);
   const [statusFilter, setStatusFilter] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -79,6 +82,21 @@ export default function Dashboard() {
 
   function handleStatusChange(id, newStatus) {
     setGames((prev) => prev.map((g) => g.id === id ? { ...g, status: newStatus } : g));
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    await supabase.from('pitches').delete().eq('game_id', deleteTarget.id);
+    const { error } = await supabase.from('games').delete().eq('id', deleteTarget.id);
+    setDeleting(false);
+    if (error) {
+      setToast(error.message);
+      setDeleteTarget(null);
+      return;
+    }
+    setGames((prev) => prev.filter((g) => g.id !== deleteTarget.id));
+    setDeleteTarget(null);
   }
 
   const sortedGames = [...games].sort((a, b) => {
@@ -181,6 +199,8 @@ export default function Dashboard() {
                     currentEmail={currentEmail}
                     onStatusChange={handleStatusChange}
                     isAdmin={ADMIN_EMAILS.includes(currentEmail)}
+                    onDeleteRequest={setDeleteTarget}
+                    onError={setToast}
                   />
                 ))}
               </tbody>
@@ -190,6 +210,37 @@ export default function Dashboard() {
       </div>
 
       <Toast message={toast} onClose={() => setToast('')} />
+
+      {deleteTarget && (
+        <div className={deleteStyles.overlay} onClick={() => !deleting && setDeleteTarget(null)}>
+          <div className={deleteStyles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 className={deleteStyles.title}>Delete Game?</h2>
+            <p className={deleteStyles.body}>
+              Are you sure you want to delete{' '}
+              <strong>{deleteTarget.away_team} @ {deleteTarget.home_team}</strong>?
+              All pitches for this game will also be deleted. This cannot be undone.
+            </p>
+            <div className={deleteStyles.actions}>
+              <button
+                type="button"
+                className={deleteStyles.cancelBtn}
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={deleteStyles.confirmBtn}
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

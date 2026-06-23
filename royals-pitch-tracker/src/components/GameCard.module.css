@@ -96,3 +96,12 @@
 .statusBtnActive {
   color: #fff !important;
 }
+
+.deleteBtnInline {
+  color: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
+
+.deleteBtnInline:hover {
+  background: #fef2f2 !important;
+}

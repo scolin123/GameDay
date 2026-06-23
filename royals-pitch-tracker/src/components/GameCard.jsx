@@ -6,7 +6,7 @@ import styles from './GameCard.module.css';
 
 const STATUS_ORDER = [STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.COMPLETED_UPLOADED];
 
-export default function GameCard({ game, currentEmail, onStatusChange, isAdmin }) {
+export default function GameCard({ game, currentEmail, onStatusChange, isAdmin, onDeleteRequest, onError }) {
   const status = game.status || STATUS.IN_PROGRESS;
 
   function formatDate(d) {
@@ -16,7 +16,11 @@ export default function GameCard({ game, currentEmail, onStatusChange, isAdmin }
   }
 
   async function handleStatusChange(next) {
-    await supabase.from('games').update({ status: next }).eq('id', game.id);
+    const { error } = await supabase.from('games').update({ status: next }).eq('id', game.id);
+    if (error) {
+      onError?.(error.message);
+      return;
+    }
     onStatusChange(game.id, next);
   }
 
@@ -42,6 +46,13 @@ export default function GameCard({ game, currentEmail, onStatusChange, isAdmin }
           onClick={() => exportGameCsv(game.id, supabase)}
         >
           Export CSV
+        </button>
+        <button
+          type="button"
+          className={`${styles.actionBtn} ${styles.deleteBtnInline}`}
+          onClick={() => onDeleteRequest(game)}
+        >
+          Delete
         </button>
       </td>
       {isAdmin && (
