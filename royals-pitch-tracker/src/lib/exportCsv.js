@@ -49,9 +49,10 @@ function buildFilename(game) {
 }
 
 export async function exportGameCsv(gameId, supabase) {
-  const [{ data: game, error: gameErr }, { data: pitches, error: pitchErr }] = await Promise.all([
+  const [{ data: game, error: gameErr }, { data: pitches, error: pitchErr }, { data: roster }] = await Promise.all([
     supabase.from('games').select('*').eq('id', gameId).single(),
     supabase.from('pitches').select('*').eq('game_id', gameId).order('pitch_number', { ascending: true }),
+    supabase.from('rosters').select('*').eq('game_id', gameId),
   ]);
 
   if (gameErr || pitchErr) {
@@ -60,6 +61,12 @@ export async function exportGameCsv(gameId, supabase) {
   }
 
   const dateFormatted = formatGameDate(game.date);
+
+  // Switch hitters export as the opposite of the pitcher's hand
+  const oppositeOf = (hand) => (hand === 'R' ? 'L' : hand === 'L' ? 'R' : '');
+  const switchHitters = new Set(
+    (roster || []).filter((r) => r.bats === 'S').map((r) => `${r.team}|${r.player_name}`)
+  );
 
   const rows = (pitches || []).map((p) => ({
     'Half Inning': safe(p.half_inning),
@@ -76,7 +83,9 @@ export async function exportGameCsv(gameId, supabase) {
     'Time To Plate (sec) with Man on First': safe(p.time_to_plate_man_on_first),
     'Batter': safe(p.batter),
     'Pitcher': safe(p.pitcher),
-    'Batter_Side': safe(p.batter_side),
+    'Batter_Side': (switchHitters.has(`${p.batter_team}|${p.batter}`) || p.batter_side === 'S')
+      ? (oppositeOf(p.pitcher_side) || safe(p.batter_side))
+      : safe(p.batter_side),
     'Pitcher_Side': safe(p.pitcher_side),
     'Pitch_Type': (p.pitch_type && p.pitch_type !== 'UN') ? (PITCH_TYPE_FULL[p.pitch_type] || p.pitch_type) : '',
     'Outcome': (p.outcome === "Fielder's Choice Out" || p.outcome === "Fielder's Choice Safe")

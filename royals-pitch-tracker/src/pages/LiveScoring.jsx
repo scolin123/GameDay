@@ -27,6 +27,8 @@ const SPRAY_EXPORT = { Pull: 'Pull', Straight: 'Straightaway', Oppo: 'Opposite F
 const FC_QOC_OUTCOME = { GB: 'Groundout', LD: 'Lineout', FB: 'Flyout', PU: 'Popout' };
 
 const BALL_OUTCOMES = ['Ball', 'Hit By Pitch', 'Catcher Interference'];
+// Everything else a pitcher throws (fouls, strikeouts, balls in play) counts as a strike for STR%
+const NON_STRIKE_OUTCOMES = ['Ball', 'Walk', 'Intentional Walk', 'Hit By Pitch', 'Catcher Interference'];
 const STRIKE_OUTCOMES = ['Called Strike', 'Swinging Strike', 'Foul'];
 const HIT_OUTCOMES = ['Single', 'Double', 'Triple', 'Home Run'];
 const OUT_OUTCOMES = [
@@ -93,6 +95,9 @@ export default function LiveScoring() {
   const [batterInput, setBatterInput] = useState('');
   const [pitcherInput, setPitcherInput] = useState('');
   const [batterSide, setBatterSide] = useState('');
+  // Side a switch hitter bats / hand a switch pitcher throws for the current at-bat
+  const [batterSwingSide, setBatterSwingSide] = useState('');
+  const [pitcherThrowHand, setPitcherThrowHand] = useState('');
 
   // Outcome panel UI state
   const [showOutcomePanel, setShowOutcomePanel] = useState(false);
@@ -165,6 +170,27 @@ export default function LiveScoring() {
       setTimerRunning(false);
     }
   }, [runners]);
+
+  // Hand the pitcher is actually using (switch pitchers pick one per at-bat)
+  const effectivePitcherHand = currentPitcherSide === 'S' ? pitcherThrowHand : currentPitcherSide;
+
+  // Switch hitter: default each at-bat to the opposite of the pitcher's hand; tap to override
+  useEffect(() => {
+    if (batterSide === 'S') {
+      setBatterSwingSide(effectivePitcherHand === 'R' ? 'L' : effectivePitcherHand === 'L' ? 'R' : '');
+    } else {
+      setBatterSwingSide('');
+    }
+  }, [batterInput, batterSide, effectivePitcherHand]);
+
+  // Switch pitcher: default throwing hand to R unless already chosen
+  useEffect(() => {
+    if (currentPitcherSide === 'S') {
+      setPitcherThrowHand((prev) => prev || 'R');
+    } else {
+      setPitcherThrowHand('');
+    }
+  }, [currentPitcherSide, pitcherInput]);
 
   async function loadGameData() {
     setLoading(true);
@@ -256,13 +282,24 @@ export default function LiveScoring() {
       }
       // Restore pitcher and seed pitcher memory from pitch history
       setBatterInput(last.batter || '');
-      setBatterSide(last.batter_side || '');
+      // Pitches store the side actually used; the roster keeps 'S' for switch players
+      const lastBattingTeam = last.half_inning === 'TOP' ? gameData.away_team : gameData.home_team;
+      const lastBatterRoster = (rosterData || []).find(
+        (r) => r.player_name === last.batter && r.team === lastBattingTeam
+      );
+      setBatterSide(lastBatterRoster?.bats === 'S' ? 'S' : (last.batter_side || ''));
       setPitcherInput(last.pitcher || '');
       const pitcherMemory = {};
       pitches.forEach((p) => {
         const pitchingTeamForP = p.half_inning === 'TOP' ? gameData.home_team : gameData.away_team;
         if (!pitcherMemory[pitchingTeamForP]) {
-          pitcherMemory[pitchingTeamForP] = { player_name: p.pitcher, throws: p.pitcher_side || '' };
+          const pitcherRoster = (rosterData || []).find(
+            (r) => r.player_name === p.pitcher && r.team === pitchingTeamForP
+          );
+          pitcherMemory[pitchingTeamForP] = {
+            player_name: p.pitcher,
+            throws: pitcherRoster?.throws === 'S' ? 'S' : (p.pitcher_side || ''),
+          };
         }
       });
       setPitcherByTeam(pitcherMemory);
@@ -271,6 +308,9 @@ export default function LiveScoring() {
         const pm = pitcherMemory[pitchingTeamNow];
         setCurrentPitcher({ player_name: pm.player_name, throws: pm.throws });
         setCurrentPitcherSide(pm.throws);
+        if (pm.throws === 'S' && (last.pitcher_side === 'L' || last.pitcher_side === 'R')) {
+          setPitcherThrowHand(last.pitcher_side);
+        }
       }
       // Set half-inning start pitch
       const currentHalfPitches = pitches.filter(
@@ -327,10 +367,13 @@ export default function LiveScoring() {
   // Pitcher game stats derived from all pitches for this game
   const pitcherStats = (() => {
     const pitcherName = currentPitcher?.player_name || pitcherInput.trim();
-    const forPitcher = allPitches.filter((p) => p.pitcher === pitcherName);
+    // Field events (pickoffs etc.) are logged rows but no pitch is thrown
+    const forPitcher = allPitches.filter(
+      (p) => p.pitcher === pitcherName && !FIELD_EVENTS.includes(p.outcome)
+    );
     const total = forPitcher.length;
-    const strikeCount = forPitcher.filter((p) =>
-      ['Called Strike', 'Swinging Strike', 'Foul', 'Strikeout Swinging', 'Strikeout Looking'].includes(p.outcome)
+    const strikeCount = forPitcher.filter(
+      (p) => p.outcome && !NON_STRIKE_OUTCOMES.includes(p.outcome)
     ).length;
     return {
       pitches: total,
@@ -365,7 +408,9 @@ export default function LiveScoring() {
 
     const count = `${balls}-${strikes}`;
     const batter = batterInput.trim() || 'Unknown';
-    const batter_side = batterSide || null;
+    // Switch players record the side actually used this at-bat; the roster keeps 'S'
+    const batter_side = batterSide === 'S' ? (batterSwingSide || 'S') : (batterSide || null);
+    const pitcher_side = currentPitcherSide === 'S' ? (pitcherThrowHand || 'S') : (currentPitcherSide || null);
 
     const pitchData = {
       game_id: gameId,
@@ -382,7 +427,7 @@ export default function LiveScoring() {
       batter_team: battingTeam,
       pitcher_team: pitchingTeam,
       batter_side,
-      pitcher_side: currentPitcherSide || null,
+      pitcher_side,
       pitch_type: pitchType || null,
       outcome,
       quality_of_contact: qoc || null,
@@ -532,7 +577,11 @@ export default function LiveScoring() {
     if (last.half_inning === 'TOP') setAwayBatterIdx(idx >= 0 ? idx : 0);
     else setHomeBatterIdx(idx >= 0 ? idx : 0);
     setBatterInput(last.batter || '');
-    setBatterSide(last.batter_side || '');
+    const undoBattingTeam = last.half_inning === 'TOP' ? game?.away_team : game?.home_team;
+    const undoBatterRoster = roster.find(
+      (r) => r.player_name === last.batter && r.team === undoBattingTeam
+    );
+    setBatterSide(undoBatterRoster?.bats === 'S' ? 'S' : (last.batter_side || ''));
     setPitcherInput(last.pitcher || '');
 
     const newRecent = recentPitches.slice(1);
@@ -808,8 +857,8 @@ export default function LiveScoring() {
       pitcher: pitcherInput.trim() || 'Unknown',
       batter_team: battingTeam,
       pitcher_team: pitchingTeam,
-      batter_side: batterSide || null,
-      pitcher_side: currentPitcherSide || null,
+      batter_side: batterSide === 'S' ? (batterSwingSide || 'S') : (batterSide || null),
+      pitcher_side: currentPitcherSide === 'S' ? (pitcherThrowHand || 'S') : (currentPitcherSide || null),
       pitch_type: null,
       outcome: eventOutcome,
       quality_of_contact: null,
@@ -982,6 +1031,20 @@ export default function LiveScoring() {
                 ))}
               </div>
             </div>
+            {batterSide === 'S' && (
+              <div className={styles.matchupRow}>
+                <span className={styles.matchupRole}>Bats as</span>
+                <div className={styles.handednessGroup}>
+                  {['L', 'R'].map((side) => (
+                    <button key={side} type="button"
+                      className={`${styles.handBtn} ${batterSwingSide === side ? styles.handBtnActive : ''}`}
+                      onClick={() => setBatterSwingSide(side)}>
+                      {side === 'L' ? 'Left' : 'Right'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className={styles.matchupRow}>
               <span className={styles.matchupRole}>Pitcher</span>
               <input
@@ -991,7 +1054,7 @@ export default function LiveScoring() {
                 placeholder="Enter pitcher name"
               />
               <div className={styles.handednessGroup}>
-                {['L', 'R'].map((side) => (
+                {['L', 'R', 'S'].map((side) => (
                   <button key={side} type="button"
                     className={`${styles.handBtn} ${currentPitcherSide === side ? styles.handBtnActive : ''}`}
                     onClick={() => setCurrentPitcherSide(currentPitcherSide === side ? '' : side)}>
@@ -1000,6 +1063,20 @@ export default function LiveScoring() {
                 ))}
               </div>
             </div>
+            {currentPitcherSide === 'S' && (
+              <div className={styles.matchupRow}>
+                <span className={styles.matchupRole}>Throws as</span>
+                <div className={styles.handednessGroup}>
+                  {['L', 'R'].map((side) => (
+                    <button key={side} type="button"
+                      className={`${styles.handBtn} ${pitcherThrowHand === side ? styles.handBtnActive : ''}`}
+                      onClick={() => setPitcherThrowHand(side)}>
+                      {side === 'L' ? 'Left' : 'Right'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 6 }}>
               <button
                 type="button"
@@ -1900,7 +1977,7 @@ export default function LiveScoring() {
             <div className={styles.gameLogHeader}>
               <h2>Game Log — {game.away_team} @ {game.home_team}</h2>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" className={styles.csvBtn} onClick={() => exportCSV(gamePitches, game)}>
+                <button type="button" className={styles.csvBtn} onClick={() => exportCSV(gamePitches, game, roster)}>
                   Download CSV
                 </button>
                 <button type="button" className={styles.closeLogBtn} onClick={() => setShowGameLog(false)}>×</button>
@@ -1941,7 +2018,12 @@ export default function LiveScoring() {
   );
 }
 
-function exportCSV(pitches, game) {
+function exportCSV(pitches, game, roster = []) {
+  // Switch hitters export as the opposite of the pitcher's hand
+  const oppositeOf = (hand) => (hand === 'R' ? 'L' : hand === 'L' ? 'R' : '');
+  const switchHitters = new Set(
+    roster.filter((r) => r.bats === 'S').map((r) => `${r.team}|${r.player_name}`)
+  );
   const dateFormatted = game?.date
     ? new Date(game.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
     : '';
@@ -1974,7 +2056,9 @@ function exportCSV(pitches, game) {
       p.time_to_plate_man_on_first != null ? p.time_to_plate_man_on_first : '',
       p.batter || '',
       p.pitcher || '',
-      p.batter_side || '',
+      (switchHitters.has(`${p.batter_team}|${p.batter}`) || p.batter_side === 'S')
+        ? (oppositeOf(p.pitcher_side) || p.batter_side || '')
+        : (p.batter_side || ''),
       p.pitcher_side || '',
       (p.pitch_type && p.pitch_type !== 'UN') ? (PITCH_TYPE_LABELS[p.pitch_type] || p.pitch_type) : '',
       outcomeExport,

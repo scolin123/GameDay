@@ -35,13 +35,6 @@ function normalizedToSvg(nx, ny) {
   return { svgX, svgY };
 }
 
-// Display coordinates: x in [-1,1] across zone, y in [0,1] bottom-to-top of zone
-function svgToDisplayCoords(svgX, svgY) {
-  const x = ((svgX - SZ_X) / SZ_W) * 2 - 1;
-  const y = 1 - (svgY - SZ_Y) / SZ_H;
-  return { x: parseFloat(x.toFixed(4)), y: parseFloat(y.toFixed(4)) };
-}
-
 function getSvgPoint(svg, e) {
   const pt = svg.createSVGPoint();
   pt.x = e.clientX;
@@ -83,7 +76,7 @@ export default function StrikeZone({ onLocationSet, onDotClick, pitchType, locat
   }
 
   const color = PITCH_COLORS[pitchType] || PITCH_COLORS.OT;
-  const hoverCoords = hover ? svgToDisplayCoords(hover.svgX, hover.svgY) : null;
+  const hoverCoords = hover ? svgToNormalized(hover.svgX, hover.svgY) : null;
 
   return (
     <svg
