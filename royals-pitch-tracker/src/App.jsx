@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import NewGame from './pages/NewGame';
 import LiveScoring from './pages/LiveScoring';
 import GameLog from './pages/GameLog';
+import Profile from './pages/Profile';
 
 function ProtectedRoute({ children, session }) {
   if (session === undefined) return null;
@@ -54,6 +55,14 @@ export default function App() {
           element={
             <ProtectedRoute session={session}>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute session={session}>
+              <Profile />
             </ProtectedRoute>
           }
         />

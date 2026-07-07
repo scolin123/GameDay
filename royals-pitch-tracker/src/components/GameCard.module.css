@@ -56,6 +56,30 @@
   color: var(--text-muted);
 }
 
+.assignedTo {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.assignSelect {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 2px 4px;
+  cursor: pointer;
+  max-width: 160px;
+}
+
+.assignSelect:hover,
+.assignSelect:focus {
+  border-color: var(--border-strong);
+  background: var(--bg-surface);
+}
+
 .num {
   font-variant-numeric: tabular-nums;
   text-align: right;

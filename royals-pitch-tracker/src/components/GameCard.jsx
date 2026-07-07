@@ -2,11 +2,12 @@ import { Link } from 'react-router-dom';
 import { exportGameCsv } from '../lib/exportCsv';
 import { supabase } from '../lib/supabase';
 import { STATUS, STATUS_LABEL, STATUS_COLOR } from '../lib/gameStatus';
+import { displayName } from '../lib/profile';
 import styles from './GameCard.module.css';
 
 const STATUS_ORDER = [STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.COMPLETED_UPLOADED];
 
-export default function GameCard({ game, currentEmail, onStatusChange, onDateChange, isAdmin, onDeleteRequest, onError }) {
+export default function GameCard({ game, currentEmail, profiles, onStatusChange, onDateChange, onAssignChange, isAdmin, onDeleteRequest, onError }) {
   const status = game.status || STATUS.IN_PROGRESS;
 
   async function handleDateChange(newDate) {
@@ -17,6 +18,18 @@ export default function GameCard({ game, currentEmail, onStatusChange, onDateCha
       return;
     }
     onDateChange(game.id, newDate);
+  }
+
+  async function handleAssignChange(newAssignee) {
+    const { error } = await supabase
+      .from('games')
+      .update({ assigned_to: newAssignee || null })
+      .eq('id', game.id);
+    if (error) {
+      onError?.(error.message);
+      return;
+    }
+    onAssignChange(game.id, newAssignee);
   }
 
   async function handleStatusChange(next) {
@@ -42,9 +55,27 @@ export default function GameCard({ game, currentEmail, onStatusChange, onDateCha
       <td className={styles.loggedBy}>
         {game.logged_by
           ? game.logged_by === currentEmail
-            ? <span className={styles.loggedByYou}>{currentEmail}</span>
-            : game.logged_by.split('@')[0]
+            ? <span className={styles.loggedByYou} title={currentEmail}>{displayName(currentEmail, profiles)}</span>
+            : <span title={game.logged_by}>{displayName(game.logged_by, profiles).split('@')[0]}</span>
           : <span className={styles.loggedByNone}>—</span>}
+      </td>
+      <td className={styles.assignedTo}>
+        {isAdmin ? (
+          <select
+            className={styles.assignSelect}
+            value={game.assigned_to || ''}
+            onChange={(e) => handleAssignChange(e.target.value)}
+          >
+            <option value="">—</option>
+            {(profiles || []).map((p) => (
+              <option key={p.user_id} value={p.email}>{p.username || p.email}</option>
+            ))}
+          </select>
+        ) : game.assigned_to ? (
+          <span title={game.assigned_to}>{displayName(game.assigned_to, profiles)}</span>
+        ) : (
+          <span className={styles.loggedByNone}>—</span>
+        )}
       </td>
       <td className={styles.num}>{game.pitch_count ?? '—'}</td>
       <td className={styles.num}>{game.inning_count ?? '—'}</td>

@@ -29,6 +29,21 @@
   font-size: 13px;
 }
 
+.profileBtn {
+  color: #cbd5e1;
+  font-size: 13px;
+  padding: 4px 10px;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.profileBtn:hover {
+  color: white;
+  border-color: #64748b;
+}
+
 .signOut {
   background: none;
   border: none;

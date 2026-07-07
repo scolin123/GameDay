@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { STATUS, STATUS_LABEL, STATUS_COLOR } from '../lib/gameStatus';
+import { ensureProfile, fetchProfiles, isAdminUser, displayName } from '../lib/profile';
 import GameCard from '../components/GameCard';
 import Toast from '../components/Toast';
 import styles from './Dashboard.module.css';
@@ -9,13 +10,13 @@ import deleteStyles from './DeleteConfirmModal.module.css';
 
 const FILTER_STATUSES = [STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.COMPLETED_UPLOADED];
 
-const ADMIN_EMAILS = ['colin@gordshier.com', 'colin@shier.ca', 'christiansturgeon06@gmail.com'];
-
 export default function Dashboard() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
   const [currentEmail, setCurrentEmail] = useState('');
+  const [myProfile, setMyProfile] = useState(null);
+  const [profiles, setProfiles] = useState([]);
   const [sortBy, setSortBy] = useState('date');
   const [sortAsc, setSortAsc] = useState(false);
   const [statusFilter, setStatusFilter] = useState(null);
@@ -23,9 +24,11 @@ export default function Dashboard() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    ensureProfile().then(({ user, profile }) => {
       setCurrentEmail(user?.email || '');
+      setMyProfile(profile);
     });
+    fetchProfiles().then(setProfiles);
     loadGames();
   }, []);
 
@@ -88,6 +91,10 @@ export default function Dashboard() {
     setGames((prev) => prev.map((g) => g.id === id ? { ...g, date: newDate } : g));
   }
 
+  function handleAssignChange(id, newAssignee) {
+    setGames((prev) => prev.map((g) => g.id === id ? { ...g, assigned_to: newAssignee || null } : g));
+  }
+
   async function handleDeleteConfirm() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -125,12 +132,18 @@ export default function Dashboard() {
     await supabase.auth.signOut();
   }
 
+  const isAdmin = isAdminUser(currentEmail, myProfile);
+
   return (
     <div className={styles.page}>
       <nav className={styles.nav}>
         <span className={styles.navBrand}>Guelph Royals Pitch Tracker</span>
         <div className={styles.navRight}>
-          {currentEmail && <span className={styles.navEmail}>{currentEmail}</span>}
+          {currentEmail && (
+            <Link to="/profile" className={styles.profileBtn}>
+              {displayName(currentEmail, profiles) || currentEmail}
+            </Link>
+          )}
           <button type="button" onClick={handleSignOut} className={styles.signOut}>
             Sign Out
           </button>
@@ -143,7 +156,7 @@ export default function Dashboard() {
           <Link to="/games/new" className={styles.newGameBtn}>New Game</Link>
         </div>
 
-        {ADMIN_EMAILS.includes(currentEmail) && (
+        {isAdmin && (
           <div className={styles.filterRow}>
             <button
               type="button"
@@ -187,10 +200,11 @@ export default function Dashboard() {
                   <th className={styles.sortableHeader} onClick={() => handleSort('logged_by')}>
                     Logged By {sortBy === 'logged_by' ? (sortAsc ? '↑' : '↓') : ''}
                   </th>
+                  <th>Assigned To</th>
                   <th className={styles.numHeader}>Pitches</th>
                   <th className={styles.numHeader}>Innings</th>
                   <th className={styles.actionsHeader}>Actions</th>
-                  {ADMIN_EMAILS.includes(currentEmail) && (
+                  {isAdmin && (
                     <th className={styles.statusHeader}>Status</th>
                   )}
                 </tr>
@@ -201,9 +215,11 @@ export default function Dashboard() {
                     key={g.id}
                     game={g}
                     currentEmail={currentEmail}
+                    profiles={profiles}
                     onStatusChange={handleStatusChange}
                     onDateChange={handleDateChange}
-                    isAdmin={ADMIN_EMAILS.includes(currentEmail)}
+                    onAssignChange={handleAssignChange}
+                    isAdmin={isAdmin}
                     onDeleteRequest={setDeleteTarget}
                     onError={setToast}
                   />
