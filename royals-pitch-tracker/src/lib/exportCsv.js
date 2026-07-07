@@ -74,7 +74,7 @@ export async function exportGameCsv(gameId, supabase) {
     'Outs': safe(p.outs),
     'Balls': safe(p.balls),
     'Strikes': safe(p.strikes),
-    'Count': p.count || '',
+    'Count': p.count ? `'${p.count}` : '',
     'Batter_Team': safe(p.batter_team),
     'Pitcher_Team': safe(p.pitcher_team),
     'Date': dateFormatted,

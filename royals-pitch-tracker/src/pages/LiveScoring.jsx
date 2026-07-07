@@ -2060,7 +2060,7 @@ function exportCSV(pitches, game, roster = []) {
       p.outs ?? '',
       p.balls ?? '',
       p.strikes ?? '',
-      p.count || '',
+      p.count ? `'${p.count}` : '',
       p.batter_team || '',
       p.pitcher_team || '',
       dateFormatted,
