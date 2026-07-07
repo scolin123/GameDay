@@ -23,15 +23,16 @@ const SZ_H = 180;
 const SVG_W = 480;
 const SVG_H = 420;
 
+// x: -1 (left) to 1 (right); y: 0 (bottom) to 1 (top), 0.5 = middle
 function svgToNormalized(svgX, svgY) {
   const x = ((svgX - SZ_X) / SZ_W) * 2 - 1;
-  const y = -(((svgY - SZ_Y) / SZ_H) * 2 - 1);
+  const y = 1 - (svgY - SZ_Y) / SZ_H;
   return { x: parseFloat(x.toFixed(10)), y: parseFloat(y.toFixed(10)) };
 }
 
 function normalizedToSvg(nx, ny) {
   const svgX = ((nx + 1) / 2) * SZ_W + SZ_X;
-  const svgY = ((-ny + 1) / 2) * SZ_H + SZ_Y;
+  const svgY = (1 - ny) * SZ_H + SZ_Y;
   return { svgX, svgY };
 }
 
