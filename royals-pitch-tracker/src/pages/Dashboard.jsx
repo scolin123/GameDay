@@ -91,10 +91,6 @@ export default function Dashboard() {
     setGames((prev) => prev.map((g) => g.id === id ? { ...g, date: newDate } : g));
   }
 
-  function handleAssignChange(id, newAssignee) {
-    setGames((prev) => prev.map((g) => g.id === id ? { ...g, assigned_to: newAssignee || null } : g));
-  }
-
   async function handleDeleteConfirm() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -200,7 +196,6 @@ export default function Dashboard() {
                   <th className={styles.sortableHeader} onClick={() => handleSort('logged_by')}>
                     Logged By {sortBy === 'logged_by' ? (sortAsc ? '↑' : '↓') : ''}
                   </th>
-                  <th>Assigned To</th>
                   <th className={styles.numHeader}>Pitches</th>
                   <th className={styles.numHeader}>Innings</th>
                   <th className={styles.actionsHeader}>Actions</th>
@@ -218,7 +213,6 @@ export default function Dashboard() {
                     profiles={profiles}
                     onStatusChange={handleStatusChange}
                     onDateChange={handleDateChange}
-                    onAssignChange={handleAssignChange}
                     isAdmin={isAdmin}
                     onDeleteRequest={setDeleteTarget}
                     onError={setToast}
