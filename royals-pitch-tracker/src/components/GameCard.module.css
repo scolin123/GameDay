@@ -20,6 +20,23 @@
   font-size: 13px !important;
 }
 
+.dateInput {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.dateInput:hover,
+.dateInput:focus {
+  border-color: var(--border-strong);
+  background: var(--bg-surface);
+}
+
 .matchup {
   font-weight: 500;
   white-space: nowrap;

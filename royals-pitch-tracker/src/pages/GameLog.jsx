@@ -262,6 +262,17 @@ export default function GameLog() {
     setEditingId(null);
   }
 
+  async function handleDateChange(newDate) {
+    if (!newDate || newDate === game?.date) return;
+    const { error } = await supabase.from('games').update({ date: newDate }).eq('id', gameId);
+    if (error) {
+      setToast(error.message);
+      return;
+    }
+    setGame((prev) => ({ ...prev, date: newDate }));
+    setToast('Game date updated');
+  }
+
   function formatTitle() {
     if (!game) return 'Pitch Log';
     const date = new Date(game.date).toLocaleDateString('en-US', {
@@ -275,6 +286,14 @@ export default function GameLog() {
       <nav className={styles.nav}>
         <Link to="/" className={styles.backLink}>← Dashboard</Link>
         <span className={styles.gameTitle}>{game ? formatTitle() : ''}</span>
+        {game && (
+          <input
+            type="date"
+            className={styles.navDate}
+            value={(game.date || '').slice(0, 10)}
+            onChange={(e) => handleDateChange(e.target.value)}
+          />
+        )}
         <button
           type="button"
           className={styles.exportBtn}

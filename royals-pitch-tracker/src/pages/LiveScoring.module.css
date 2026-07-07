@@ -27,6 +27,24 @@
   font-size: 13px;
 }
 
+.navDate {
+  background: transparent;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 2px 6px;
+  cursor: pointer;
+  color-scheme: dark;
+}
+
+.navDate:hover,
+.navDate:focus {
+  border-color: #64748b;
+  color: white;
+}
+
 .signOut {
   background: none;
   border: none;

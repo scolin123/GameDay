@@ -936,6 +936,19 @@ export default function LiveScoring() {
       <nav className={styles.nav}>
         <span className={styles.navBrand}>Guelph Royals Pitch Tracker</span>
         <span className={styles.navGame}>{game.away_team} @ {game.home_team}</span>
+        <input
+          type="date"
+          className={styles.navDate}
+          value={(game.date || '').slice(0, 10)}
+          onChange={async (e) => {
+            const newDate = e.target.value;
+            if (!newDate || newDate === game.date) return;
+            const { error } = await supabase.from('games').update({ date: newDate }).eq('id', gameId);
+            if (error) { setToast(error.message); return; }
+            setGame((prev) => ({ ...prev, date: newDate }));
+            setToast('Game date updated');
+          }}
+        />
         <button type="button" className={styles.viewLogBtn}
           onClick={async () => {
             const { data } = await supabase.from('pitches').select('*').eq('game_id', gameId).order('pitch_number');

@@ -6,13 +6,17 @@ import styles from './GameCard.module.css';
 
 const STATUS_ORDER = [STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.COMPLETED_UPLOADED];
 
-export default function GameCard({ game, currentEmail, onStatusChange, isAdmin, onDeleteRequest, onError }) {
+export default function GameCard({ game, currentEmail, onStatusChange, onDateChange, isAdmin, onDeleteRequest, onError }) {
   const status = game.status || STATUS.IN_PROGRESS;
 
-  function formatDate(d) {
-    return new Date(d).toLocaleDateString('en-CA', {
-      year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC',
-    });
+  async function handleDateChange(newDate) {
+    if (!newDate || newDate === game.date) return;
+    const { error } = await supabase.from('games').update({ date: newDate }).eq('id', game.id);
+    if (error) {
+      onError?.(error.message);
+      return;
+    }
+    onDateChange(game.id, newDate);
   }
 
   async function handleStatusChange(next) {
@@ -26,7 +30,14 @@ export default function GameCard({ game, currentEmail, onStatusChange, isAdmin, 
 
   return (
     <tr className={styles.row}>
-      <td className={styles.date}>{formatDate(game.date)}</td>
+      <td className={styles.date}>
+        <input
+          type="date"
+          className={styles.dateInput}
+          value={(game.date || '').slice(0, 10)}
+          onChange={(e) => handleDateChange(e.target.value)}
+        />
+      </td>
       <td className={styles.matchup}>{game.away_team} @ {game.home_team}</td>
       <td className={styles.loggedBy}>
         {game.logged_by

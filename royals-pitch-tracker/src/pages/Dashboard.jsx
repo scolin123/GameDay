@@ -84,6 +84,10 @@ export default function Dashboard() {
     setGames((prev) => prev.map((g) => g.id === id ? { ...g, status: newStatus } : g));
   }
 
+  function handleDateChange(id, newDate) {
+    setGames((prev) => prev.map((g) => g.id === id ? { ...g, date: newDate } : g));
+  }
+
   async function handleDeleteConfirm() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -198,6 +202,7 @@ export default function Dashboard() {
                     game={g}
                     currentEmail={currentEmail}
                     onStatusChange={handleStatusChange}
+                    onDateChange={handleDateChange}
                     isAdmin={ADMIN_EMAILS.includes(currentEmail)}
                     onDeleteRequest={setDeleteTarget}
                     onError={setToast}
