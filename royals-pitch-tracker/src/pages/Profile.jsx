@@ -7,6 +7,18 @@ import { STATUS, STATUS_LABEL, STATUS_COLOR } from '../lib/gameStatus';
 import Toast from '../components/Toast';
 import styles from './Profile.module.css';
 
+const CBL_TEAMS = [
+  'Barrie Baycats',
+  'Brantford Red Sox',
+  'Chatham-Kent Barnstormers',
+  'Guelph Royals',
+  'Hamilton Cardinals',
+  'Kitchener Panthers',
+  'London Majors',
+  'Toronto Maple Leafs',
+  'Welland Jackfish',
+];
+
 function formatDate(d) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-US', {
@@ -36,6 +48,81 @@ function GameRow({ game, profiles, showAssigned }) {
   );
 }
 
+function formatSheetDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+  });
+}
+
+function SheetRow({ row, isAdmin, onChange, onDelete }) {
+  const [time, setTime] = useState(row.game_time || '');
+  const [assigned, setAssigned] = useState(row.assigned_to || '');
+
+  if (!isAdmin) {
+    return (
+      <tr className={styles.sheetRow}>
+        <td className={styles.sheetCell}>{formatSheetDate(row.game_date)}</td>
+        <td className={styles.sheetCell}>{row.game_time || '—'}</td>
+        <td className={styles.sheetCell}>{row.home_team || '—'}</td>
+        <td className={styles.sheetCell}>{row.away_team || '—'}</td>
+        <td className={styles.sheetCell}>{row.assigned_to || '—'}</td>
+      </tr>
+    );
+  }
+
+  const teamSelect = (field) => (
+    <select
+      className={styles.sheetSelect}
+      value={row[field] || ''}
+      onChange={(e) => onChange(row.id, field, e.target.value)}
+    >
+      <option value="">—</option>
+      {CBL_TEAMS.map((t) => <option key={t} value={t}>{t}</option>)}
+    </select>
+  );
+
+  return (
+    <tr className={styles.sheetRow}>
+      <td className={styles.sheetCell}>
+        <input
+          type="date"
+          className={styles.sheetInput}
+          value={(row.game_date || '').slice(0, 10)}
+          onChange={(e) => e.target.value && onChange(row.id, 'game_date', e.target.value)}
+        />
+      </td>
+      <td className={styles.sheetCell}>
+        <input
+          type="text"
+          className={`${styles.sheetInput} ${styles.sheetTimeInput}`}
+          placeholder="7:05"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          onBlur={() => { if (time !== (row.game_time || '')) onChange(row.id, 'game_time', time.trim()); }}
+        />
+      </td>
+      <td className={styles.sheetCell}>{teamSelect('home_team')}</td>
+      <td className={styles.sheetCell}>{teamSelect('away_team')}</td>
+      <td className={styles.sheetCell}>
+        <input
+          type="text"
+          className={styles.sheetInput}
+          placeholder="Name"
+          value={assigned}
+          onChange={(e) => setAssigned(e.target.value)}
+          onBlur={() => { if (assigned !== (row.assigned_to || '')) onChange(row.id, 'assigned_to', assigned.trim()); }}
+        />
+      </td>
+      <td className={`${styles.sheetCell} ${styles.sheetDeleteCell}`}>
+        <button type="button" className={styles.sheetDeleteBtn} title="Remove row" onClick={() => onDelete(row.id)}>
+          ✕
+        </button>
+      </td>
+    </tr>
+  );
+}
+
 export default function Profile() {
   const [email, setEmail] = useState('');
   const [profile, setProfile] = useState(null);
@@ -51,6 +138,8 @@ export default function Profile() {
   const [tab, setTab] = useState('games');
   const [myGames, setMyGames] = useState([]);
   const [upcoming, setUpcoming] = useState([]);
+  const [schedule, setSchedule] = useState([]);
+  const [scheduleMissing, setScheduleMissing] = useState(false);
   const [loadingGames, setLoadingGames] = useState(true);
   const [toast, setToast] = useState('');
 
@@ -62,14 +151,19 @@ export default function Profile() {
     setUsername(prof?.username || '');
 
     const today = new Date().toISOString().split('T')[0];
-    const [{ data: mine }, { data: sched }, allProfiles] = await Promise.all([
+    const [{ data: mine }, { data: sched }, allProfiles, { data: sheet, error: sheetErr }] = await Promise.all([
       supabase.from('games').select('*').eq('logged_by', user.email).order('date', { ascending: false }),
       supabase.from('games').select('*').gte('date', today).order('date', { ascending: true }),
       fetchProfiles(),
+      supabase.from('scheduled_games').select('*')
+        .order('game_date', { ascending: true })
+        .order('game_time', { ascending: true }),
     ]);
     setMyGames(mine || []);
     setUpcoming(sched || []);
     setProfiles(allProfiles);
+    setSchedule(sheet || []);
+    setScheduleMissing(!!sheetErr);
     setLoadingGames(false);
   }
 
@@ -137,6 +231,41 @@ export default function Profile() {
     setNewPassword('');
     setConfirmPassword('');
     setToast('Password updated');
+  }
+
+  async function handleAddScheduleRow() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from('scheduled_games')
+      .insert({ game_date: today })
+      .select()
+      .single();
+    if (error) {
+      setToast(`${error.message} — make sure the schedule SQL has been run in Supabase.`);
+      return;
+    }
+    setSchedule((prev) => [...prev, data]);
+  }
+
+  async function handleScheduleChange(id, field, value) {
+    const { error } = await supabase
+      .from('scheduled_games')
+      .update({ [field]: value || null })
+      .eq('id', id);
+    if (error) {
+      setToast(error.message);
+      return;
+    }
+    setSchedule((prev) => prev.map((r) => r.id === id ? { ...r, [field]: value || null } : r));
+  }
+
+  async function handleScheduleDelete(id) {
+    const { error } = await supabase.from('scheduled_games').delete().eq('id', id);
+    if (error) {
+      setToast(error.message);
+      return;
+    }
+    setSchedule((prev) => prev.filter((r) => r.id !== id));
   }
 
   const isAdmin = isAdminUser(email, profile);
@@ -299,6 +428,53 @@ export default function Profile() {
           </div>
         ) : (
           <div className={styles.tabContent}>
+            <h3 className={styles.groupTitle}>League Schedule</h3>
+            {scheduleMissing ? (
+              <p className={styles.empty}>
+                Schedule sheet unavailable — run supabase/2026-07-07_schedule_sheet.sql in Supabase to enable it.
+              </p>
+            ) : (
+              <>
+                <div className={styles.sheetWrap}>
+                  <table className={styles.sheet}>
+                    <thead>
+                      <tr>
+                        <th className={styles.sheetTh}>Date</th>
+                        <th className={styles.sheetTh}>Time:</th>
+                        <th className={styles.sheetTh}>Home</th>
+                        <th className={styles.sheetTh}>Away</th>
+                        <th className={styles.sheetTh}>Assigned?</th>
+                        {isAdmin && <th className={styles.sheetTh}></th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {schedule.length === 0 ? (
+                        <tr>
+                          <td className={styles.sheetCell} colSpan={isAdmin ? 6 : 5}>
+                            <span className={styles.empty}>No games scheduled yet.</span>
+                          </td>
+                        </tr>
+                      ) : (
+                        schedule.map((row) => (
+                          <SheetRow
+                            key={row.id}
+                            row={row}
+                            isAdmin={isAdmin}
+                            onChange={handleScheduleChange}
+                            onDelete={handleScheduleDelete}
+                          />
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                {isAdmin && (
+                  <button type="button" className={styles.addRowBtn} onClick={handleAddScheduleRow}>
+                    + Add Game
+                  </button>
+                )}
+              </>
+            )}
             <h3 className={styles.groupTitle}>Assigned to you</h3>
             {assignedToMe.length === 0 ? (
               <p className={styles.empty}>No upcoming games assigned to you.</p>

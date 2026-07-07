@@ -303,3 +303,120 @@
   font-size: 14px;
   padding: 4px 0;
 }
+
+/* League schedule sheet */
+.sheetWrap {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.sheet {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-surface);
+}
+
+.sheetTh {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.sheetRow {
+  border-bottom: 1px solid var(--border);
+}
+
+.sheetRow:last-child {
+  border-bottom: none;
+}
+
+.sheetCell {
+  padding: 6px 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.sheetInput {
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  width: 100%;
+  min-width: 90px;
+}
+
+.sheetTimeInput {
+  min-width: 60px;
+  max-width: 80px;
+}
+
+.sheetInput:hover,
+.sheetInput:focus {
+  border-color: var(--border-strong);
+  background: var(--bg-surface);
+  outline: none;
+}
+
+.sheetSelect {
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  max-width: 240px;
+}
+
+.sheetSelect:hover,
+.sheetSelect:focus {
+  border-color: var(--border-strong);
+  background: var(--bg-surface);
+  outline: none;
+}
+
+.sheetDeleteCell {
+  width: 36px;
+  text-align: center;
+}
+
+.sheetDeleteBtn {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.sheetDeleteBtn:hover {
+  color: var(--color-danger);
+  background: var(--bg-elevated);
+}
+
+.addRowBtn {
+  align-self: flex-start;
+  padding: 6px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.addRowBtn:hover {
+  background: var(--bg-elevated);
+}
