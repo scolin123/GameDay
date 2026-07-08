@@ -23,10 +23,19 @@ export default function Dashboard() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [myScheduledCount, setMyScheduledCount] = useState(0);
+
   useEffect(() => {
     ensureProfile().then(({ user, profile }) => {
       setCurrentEmail(user?.email || '');
       setMyProfile(profile);
+      const uname = (profile?.username || '').trim().toLowerCase();
+      if (!uname) return;
+      const today = new Date().toISOString().split('T')[0];
+      supabase.from('scheduled_games').select('assigned_to').gte('game_date', today).then(({ data }) => {
+        if (!data) return;
+        setMyScheduledCount(data.filter((r) => (r.assigned_to || '').trim().toLowerCase() === uname).length);
+      });
     });
     fetchProfiles().then(setProfiles);
     loadGames();
@@ -130,14 +139,30 @@ export default function Dashboard() {
 
   const isAdmin = isAdminUser(currentEmail, myProfile);
 
+  // Notification badge: my unfinished games + upcoming games assigned to me
+  const todayStr = new Date().toISOString().split('T')[0];
+  const pendingCount = currentEmail
+    ? games.filter((g) => g.logged_by === currentEmail
+        && (g.status || STATUS.IN_PROGRESS) === STATUS.IN_PROGRESS).length
+    : 0;
+  const assignedUpcomingCount = currentEmail
+    ? games.filter((g) => g.assigned_to === currentEmail && (g.date || '') >= todayStr).length
+    : 0;
+  const notifCount = pendingCount + assignedUpcomingCount + myScheduledCount;
+
   return (
     <div className={styles.page}>
       <nav className={styles.nav}>
         <span className={styles.navBrand}>Guelph Royals Pitch Tracker</span>
         <div className={styles.navRight}>
           {currentEmail && (
-            <Link to="/profile" className={styles.profileBtn}>
+            <Link
+              to="/profile"
+              className={styles.profileBtn}
+              title={notifCount > 0 ? `${pendingCount} game${pendingCount === 1 ? '' : 's'} to finish, ${assignedUpcomingCount + myScheduledCount} upcoming assigned to you` : undefined}
+            >
               {displayName(currentEmail, profiles) || currentEmail}
+              {notifCount > 0 && <span className={styles.notifBadge}>{notifCount}</span>}
             </Link>
           )}
           <button type="button" onClick={handleSignOut} className={styles.signOut}>

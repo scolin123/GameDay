@@ -107,7 +107,7 @@ function SheetRow({ row, isAdmin, onChange, onDelete }) {
       <td className={styles.sheetCell}>
         <input
           type="text"
-          className={styles.sheetInput}
+          className={`${styles.sheetInput} ${styles.sheetInputPlain}`}
           placeholder="Name"
           value={assigned}
           onChange={(e) => setAssigned(e.target.value)}

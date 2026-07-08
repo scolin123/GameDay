@@ -362,6 +362,14 @@
   max-width: 80px;
 }
 
+.sheetInputPlain,
+.sheetInputPlain:hover,
+.sheetInputPlain:focus {
+  border-color: transparent;
+  background: transparent;
+  outline: none;
+}
+
 .sheetInput:hover,
 .sheetInput:focus {
   border-color: var(--border-strong);
