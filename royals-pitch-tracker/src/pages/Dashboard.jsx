@@ -29,13 +29,18 @@ export default function Dashboard() {
     ensureProfile().then(({ user, profile }) => {
       setCurrentEmail(user?.email || '');
       setMyProfile(profile);
-      const uname = (profile?.username || '').trim().toLowerCase();
-      if (!uname) return;
+      const myEmail = (user?.email || '').toLowerCase();
+      if (!myEmail) return;
       const today = new Date().toISOString().split('T')[0];
-      supabase.from('scheduled_games').select('assigned_to').gte('game_date', today).then(({ data }) => {
-        if (!data) return;
-        setMyScheduledCount(data.filter((r) => (r.assigned_to || '').trim().toLowerCase() === uname).length);
-      });
+      // Only published schedule rows ping the assignee
+      supabase.from('scheduled_games')
+        .select('assigned_to')
+        .eq('published', true)
+        .gte('game_date', today)
+        .then(({ data }) => {
+          if (!data) return;
+          setMyScheduledCount(data.filter((r) => (r.assigned_to || '').toLowerCase() === myEmail).length);
+        });
     });
     fetchProfiles().then(setProfiles);
     loadGames();

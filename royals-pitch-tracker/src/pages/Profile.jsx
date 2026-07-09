@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ADMIN_CODE, ensureProfile, fetchProfiles, isAdminUser, displayName } from '../lib/profile';
+import { fetchMyTeams, fetchTeamMemberIds, joinTeamByCode } from '../lib/teams';
+import { weekStart, addDays, formatWeekLabel, inWeek, todayStr } from '../lib/week';
 import { getTheme, setTheme } from '../lib/theme';
 import { STATUS, STATUS_LABEL, STATUS_COLOR } from '../lib/gameStatus';
 import Toast from '../components/Toast';
@@ -55,9 +57,8 @@ function formatSheetDate(d) {
   });
 }
 
-function SheetRow({ row, isAdmin, onChange, onDelete }) {
+function SheetRow({ row, isAdmin, members, profiles, onChange, onDelete }) {
   const [time, setTime] = useState(row.game_time || '');
-  const [assigned, setAssigned] = useState(row.assigned_to || '');
 
   if (!isAdmin) {
     return (
@@ -66,7 +67,7 @@ function SheetRow({ row, isAdmin, onChange, onDelete }) {
         <td className={styles.sheetCell}>{row.game_time || '—'}</td>
         <td className={styles.sheetCell}>{row.home_team || '—'}</td>
         <td className={styles.sheetCell}>{row.away_team || '—'}</td>
-        <td className={styles.sheetCell}>{row.assigned_to || '—'}</td>
+        <td className={styles.sheetCell}>{row.assigned_to ? displayName(row.assigned_to, profiles) : '—'}</td>
       </tr>
     );
   }
@@ -105,16 +106,21 @@ function SheetRow({ row, isAdmin, onChange, onDelete }) {
       <td className={styles.sheetCell}>{teamSelect('home_team')}</td>
       <td className={styles.sheetCell}>{teamSelect('away_team')}</td>
       <td className={styles.sheetCell}>
-        <input
-          type="text"
-          className={`${styles.sheetInput} ${styles.sheetInputPlain}`}
-          placeholder="Name"
-          value={assigned}
-          onChange={(e) => setAssigned(e.target.value)}
-          onBlur={() => { if (assigned !== (row.assigned_to || '')) onChange(row.id, 'assigned_to', assigned.trim()); }}
-        />
+        <select
+          className={`${styles.sheetSelect} ${styles.sheetInputPlain}`}
+          value={row.assigned_to || ''}
+          onChange={(e) => onChange(row.id, 'assigned_to', e.target.value)}
+        >
+          <option value="">—</option>
+          {(members || []).map((m) => (
+            <option key={m.user_id} value={m.email}>{m.username || m.email}</option>
+          ))}
+        </select>
       </td>
       <td className={`${styles.sheetCell} ${styles.sheetDeleteCell}`}>
+        <span className={`${styles.stateChip} ${row.published ? styles.stateChipPublished : styles.stateChipDraft}`}>
+          {row.published ? 'Published' : 'Draft'}
+        </span>
         <button type="button" className={styles.sheetDeleteBtn} title="Remove row" onClick={() => onDelete(row.id)}>
           ✕
         </button>
@@ -142,6 +148,12 @@ export default function Profile() {
   const [scheduleMissing, setScheduleMissing] = useState(false);
   const [loadingGames, setLoadingGames] = useState(true);
   const [toast, setToast] = useState('');
+  const [myTeams, setMyTeams] = useState([]);
+  const [teamMemberIds, setTeamMemberIds] = useState([]);
+  const [teamCode, setTeamCode] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [selectedWeek, setSelectedWeek] = useState(weekStart(todayStr()));
+  const [publishing, setPublishing] = useState(false);
 
   async function load() {
     const { user, profile: prof } = await ensureProfile();
@@ -150,20 +162,23 @@ export default function Profile() {
     setProfile(prof);
     setUsername(prof?.username || '');
 
-    const today = new Date().toISOString().split('T')[0];
-    const [{ data: mine }, { data: sched }, allProfiles, { data: sheet, error: sheetErr }] = await Promise.all([
+    const today = todayStr();
+    const [{ data: mine }, { data: sched }, allProfiles, { data: sheet, error: sheetErr }, teams] = await Promise.all([
       supabase.from('games').select('*').eq('logged_by', user.email).order('date', { ascending: false }),
       supabase.from('games').select('*').gte('date', today).order('date', { ascending: true }),
       fetchProfiles(),
       supabase.from('scheduled_games').select('*')
         .order('game_date', { ascending: true })
         .order('game_time', { ascending: true }),
+      fetchMyTeams(user.id),
     ]);
     setMyGames(mine || []);
     setUpcoming(sched || []);
     setProfiles(allProfiles);
     setSchedule(sheet || []);
     setScheduleMissing(!!sheetErr);
+    setMyTeams(teams);
+    if (teams[0]) setTeamMemberIds(await fetchTeamMemberIds(teams[0].id));
     setLoadingGames(false);
   }
 
@@ -233,11 +248,30 @@ export default function Profile() {
     setToast('Password updated');
   }
 
+  async function handleJoinTeam(e) {
+    e.preventDefault();
+    if (!teamCode.trim()) return;
+    setJoining(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { team, error } = await joinTeamByCode(teamCode.trim(), user.id);
+    setJoining(false);
+    if (error) {
+      setToast(error);
+      return;
+    }
+    setTeamCode('');
+    const teams = await fetchMyTeams(user.id);
+    setMyTeams(teams);
+    if (teams[0]) setTeamMemberIds(await fetchTeamMemberIds(teams[0].id));
+    setToast(`Joined ${team.name}`);
+  }
+
   async function handleAddScheduleRow() {
-    const today = new Date().toISOString().split('T')[0];
+    const insert = { game_date: selectedWeek };
+    if (myTeams[0]) insert.team_id = myTeams[0].id;
     const { data, error } = await supabase
       .from('scheduled_games')
-      .insert({ game_date: today })
+      .insert(insert)
       .select()
       .single();
     if (error) {
@@ -245,6 +279,36 @@ export default function Profile() {
       return;
     }
     setSchedule((prev) => [...prev, data]);
+  }
+
+  async function handlePublishWeek() {
+    const draftIds = schedule
+      .filter((r) => inWeek(r.game_date, selectedWeek) && !r.published)
+      .map((r) => r.id);
+    if (draftIds.length === 0) {
+      setToast('Nothing new to publish this week.');
+      return;
+    }
+    setPublishing(true);
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('scheduled_games')
+      .update({ published: true, published_at: now })
+      .in('id', draftIds);
+    setPublishing(false);
+    if (error) {
+      setToast(error.message);
+      return;
+    }
+    const notified = new Set(
+      schedule
+        .filter((r) => draftIds.includes(r.id) && r.assigned_to)
+        .map((r) => r.assigned_to)
+    ).size;
+    setSchedule((prev) => prev.map((r) =>
+      draftIds.includes(r.id) ? { ...r, published: true, published_at: now } : r
+    ));
+    setToast(`Published ${draftIds.length} game${draftIds.length === 1 ? '' : 's'} — ${notified} ${notified === 1 ? 'person' : 'people'} notified`);
   }
 
   async function handleScheduleChange(id, field, value) {
@@ -273,6 +337,17 @@ export default function Profile() {
   const finished = myGames.filter((g) => (g.status || STATUS.IN_PROGRESS) !== STATUS.IN_PROGRESS);
   const assignedToMe = upcoming.filter((g) => g.assigned_to === email);
   const otherUpcoming = upcoming.filter((g) => g.assigned_to !== email);
+
+  const teamMembers = profiles.filter((p) => teamMemberIds.includes(p.user_id));
+  const weekRows = schedule
+    .filter((r) => inWeek(r.game_date, selectedWeek))
+    .sort((a, b) =>
+      (a.game_date || '').localeCompare(b.game_date || '')
+      || (a.game_time || '').localeCompare(b.game_time || ''));
+  const weekDraftCount = weekRows.filter((r) => !r.published).length;
+  const weekHasPublished = weekRows.some((r) => r.published);
+  const myScheduledUpcoming = schedule.filter((r) =>
+    r.assigned_to === email && r.published && (r.game_date || '') >= todayStr()).length;
 
   return (
     <div className={styles.page}>
@@ -358,6 +433,33 @@ export default function Profile() {
             )}
           </section>
 
+          {/* Teams */}
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>Teams</h2>
+            {myTeams.length > 0 && (
+              <div className={styles.teamChips}>
+                {myTeams.map((t) => (
+                  <span key={t.id} className={styles.teamChip}>{t.name}</span>
+                ))}
+              </div>
+            )}
+            <form onSubmit={handleJoinTeam}>
+              <div className={styles.inlineInputs}>
+                <input
+                  type="text"
+                  className={styles.input}
+                  placeholder="Team code"
+                  value={teamCode}
+                  onChange={(e) => setTeamCode(e.target.value)}
+                />
+                <button type="submit" className={styles.primaryBtn} disabled={joining || !teamCode}>
+                  {joining ? 'Joining…' : 'Join'}
+                </button>
+              </div>
+              <p className={styles.hint}>Enter a team code to join. Members appear in that team's assignment list.</p>
+            </form>
+          </section>
+
           {/* Password */}
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Reset Password</h2>
@@ -401,7 +503,7 @@ export default function Profile() {
             className={`${styles.tabBtn} ${tab === 'schedule' ? styles.tabBtnActive : ''}`}
             onClick={() => setTab('schedule')}
           >
-            Schedule{assignedToMe.length > 0 ? ` (${assignedToMe.length} assigned)` : ''}
+            Schedule{myScheduledUpcoming > 0 ? ` (${myScheduledUpcoming} assigned)` : ''}
           </button>
         </div>
 
@@ -428,10 +530,45 @@ export default function Profile() {
           </div>
         ) : (
           <div className={styles.tabContent}>
-            <h3 className={styles.groupTitle}>League Schedule</h3>
+            <div className={styles.weekNav}>
+              <button
+                type="button"
+                className={styles.weekNavBtn}
+                onClick={() => setSelectedWeek((w) => addDays(w, -7))}
+                title="Previous week"
+              >
+                ‹
+              </button>
+              <div className={styles.weekLabel}>
+                <span className={styles.weekLabelTitle}>Week of {formatWeekLabel(selectedWeek)}</span>
+                {isAdmin && (
+                  <span className={styles.weekLabelSub}>
+                    {weekDraftCount > 0
+                      ? `${weekDraftCount} draft${weekDraftCount === 1 ? '' : 's'} not yet published`
+                      : weekHasPublished ? 'All published ✓' : 'No games yet'}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className={styles.weekNavBtn}
+                onClick={() => setSelectedWeek((w) => addDays(w, 7))}
+                title="Next week"
+              >
+                ›
+              </button>
+              <button
+                type="button"
+                className={styles.thisWeekBtn}
+                onClick={() => setSelectedWeek(weekStart(todayStr()))}
+              >
+                This week
+              </button>
+            </div>
+
             {scheduleMissing ? (
               <p className={styles.empty}>
-                Schedule sheet unavailable — run supabase/2026-07-07_schedule_sheet.sql in Supabase to enable it.
+                Schedule sheet unavailable — run the schedule + teams SQL in Supabase to enable it.
               </p>
             ) : (
               <>
@@ -448,18 +585,22 @@ export default function Profile() {
                       </tr>
                     </thead>
                     <tbody>
-                      {schedule.length === 0 ? (
+                      {weekRows.length === 0 ? (
                         <tr>
                           <td className={styles.sheetCell} colSpan={isAdmin ? 6 : 5}>
-                            <span className={styles.empty}>No games scheduled yet.</span>
+                            <span className={styles.empty}>
+                              {isAdmin ? 'No games this week yet — add some below.' : 'No games published for this week.'}
+                            </span>
                           </td>
                         </tr>
                       ) : (
-                        schedule.map((row) => (
+                        weekRows.map((row) => (
                           <SheetRow
                             key={row.id}
                             row={row}
                             isAdmin={isAdmin}
+                            members={teamMembers}
+                            profiles={profiles}
                             onChange={handleScheduleChange}
                             onDelete={handleScheduleDelete}
                           />
@@ -469,9 +610,21 @@ export default function Profile() {
                   </table>
                 </div>
                 {isAdmin && (
-                  <button type="button" className={styles.addRowBtn} onClick={handleAddScheduleRow}>
-                    + Add Game
-                  </button>
+                  <div className={styles.sheetActions}>
+                    <button type="button" className={styles.addRowBtn} onClick={handleAddScheduleRow}>
+                      + Add Game
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.publishBtn}
+                      onClick={handlePublishWeek}
+                      disabled={publishing || weekDraftCount === 0}
+                    >
+                      {publishing
+                        ? 'Publishing…'
+                        : weekDraftCount > 0 ? `Publish Week (${weekDraftCount})` : 'Published ✓'}
+                    </button>
+                  </div>
                 )}
               </>
             )}
