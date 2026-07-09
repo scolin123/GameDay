@@ -44,22 +44,39 @@ export default function Dashboard() {
 
     const gameIds = (data || []).map((g) => g.id);
 
-    const { data: pitchRows, error: pitchErr } = await supabase
-      .from('pitches')
-      .select('game_id, inning')
-      .in('game_id', gameIds.length > 0 ? gameIds : ['00000000-0000-0000-0000-000000000000'])
-      .limit(10000);
-
-    if (pitchErr) console.error('Pitch fetch error:', pitchErr.message);
-
     const pitchCountByGame = {};
     const maxInningByGame = {};
-    (pitchRows || []).forEach(({ game_id, inning }) => {
-      pitchCountByGame[game_id] = (pitchCountByGame[game_id] || 0) + 1;
-      if (maxInningByGame[game_id] === undefined || inning > maxInningByGame[game_id]) {
-        maxInningByGame[game_id] = inning;
-      }
-    });
+
+    // One aggregated row per game, computed in the database (never truncated)
+    const { data: summaryRows, error: summaryErr } = await supabase
+      .from('game_pitch_summary')
+      .select('game_id, pitch_count, inning_count')
+      .in('game_id', gameIds.length > 0 ? gameIds : ['00000000-0000-0000-0000-000000000000']);
+
+    if (!summaryErr) {
+      (summaryRows || []).forEach(({ game_id, pitch_count, inning_count }) => {
+        pitchCountByGame[game_id] = pitch_count;
+        maxInningByGame[game_id] = inning_count;
+      });
+    } else {
+      // View not created yet (run supabase/2026-07-09_game_pitch_summary.sql).
+      // Fall back to the old client-side count, which is wrong past the row cap.
+      console.error('game_pitch_summary unavailable, falling back:', summaryErr.message);
+      const { data: pitchRows, error: pitchErr } = await supabase
+        .from('pitches')
+        .select('game_id, inning')
+        .in('game_id', gameIds.length > 0 ? gameIds : ['00000000-0000-0000-0000-000000000000'])
+        .limit(10000);
+
+      if (pitchErr) console.error('Pitch fetch error:', pitchErr.message);
+
+      (pitchRows || []).forEach(({ game_id, inning }) => {
+        pitchCountByGame[game_id] = (pitchCountByGame[game_id] || 0) + 1;
+        if (maxInningByGame[game_id] === undefined || inning > maxInningByGame[game_id]) {
+          maxInningByGame[game_id] = inning;
+        }
+      });
+    }
 
     const enriched = (data || []).map((g) => ({
       ...g,
