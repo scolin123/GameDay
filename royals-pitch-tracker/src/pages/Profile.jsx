@@ -57,6 +57,23 @@ function formatSheetDate(d) {
   });
 }
 
+function ScheduleSummaryRow({ row, profiles }) {
+  return (
+    <div className={styles.gameRow}>
+      <span className={styles.gameDate}>
+        {formatSheetDate(row.game_date)}{row.game_time ? ` · ${row.game_time}` : ''}
+      </span>
+      <span className={styles.gameMatchup}>{row.away_team || '—'} @ {row.home_team || '—'}</span>
+      <span className={styles.gameAssigned}>
+        {row.assigned_to ? displayName(row.assigned_to, profiles) : '—'}
+      </span>
+      {!row.published && (
+        <span className={`${styles.stateChip} ${styles.stateChipDraft}`}>Draft</span>
+      )}
+    </div>
+  );
+}
+
 function SheetRow({ row, isAdmin, members, profiles, onChange, onDelete }) {
   const [time, setTime] = useState(row.game_time || '');
 
@@ -143,7 +160,6 @@ export default function Profile() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [tab, setTab] = useState('games');
   const [myGames, setMyGames] = useState([]);
-  const [upcoming, setUpcoming] = useState([]);
   const [schedule, setSchedule] = useState([]);
   const [scheduleMissing, setScheduleMissing] = useState(false);
   const [loadingGames, setLoadingGames] = useState(true);
@@ -152,6 +168,7 @@ export default function Profile() {
   const [teamMemberIds, setTeamMemberIds] = useState([]);
   const [teamCode, setTeamCode] = useState('');
   const [joining, setJoining] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(weekStart(todayStr()));
   const [publishing, setPublishing] = useState(false);
 
@@ -162,10 +179,8 @@ export default function Profile() {
     setProfile(prof);
     setUsername(prof?.username || '');
 
-    const today = todayStr();
-    const [{ data: mine }, { data: sched }, allProfiles, { data: sheet, error: sheetErr }, teams] = await Promise.all([
+    const [{ data: mine }, allProfiles, { data: sheet, error: sheetErr }, teams] = await Promise.all([
       supabase.from('games').select('*').eq('logged_by', user.email).order('date', { ascending: false }),
-      supabase.from('games').select('*').gte('date', today).order('date', { ascending: true }),
       fetchProfiles(),
       supabase.from('scheduled_games').select('*')
         .order('game_date', { ascending: true })
@@ -173,7 +188,6 @@ export default function Profile() {
       fetchMyTeams(user.id),
     ]);
     setMyGames(mine || []);
-    setUpcoming(sched || []);
     setProfiles(allProfiles);
     setSchedule(sheet || []);
     setScheduleMissing(!!sheetErr);
@@ -260,6 +274,7 @@ export default function Profile() {
       return;
     }
     setTeamCode('');
+    setShowJoin(false);
     const teams = await fetchMyTeams(user.id);
     setMyTeams(teams);
     if (teams[0]) setTeamMemberIds(await fetchTeamMemberIds(teams[0].id));
@@ -267,7 +282,9 @@ export default function Profile() {
   }
 
   async function handleAddScheduleRow() {
-    const insert = { game_date: selectedWeek };
+    // Default to today when building the current week, otherwise the week's Monday
+    const defaultDate = inWeek(todayStr(), selectedWeek) ? todayStr() : selectedWeek;
+    const insert = { game_date: defaultDate };
     if (myTeams[0]) insert.team_id = myTeams[0].id;
     const { data, error } = await supabase
       .from('scheduled_games')
@@ -335,8 +352,6 @@ export default function Profile() {
   const isAdmin = isAdminUser(email, profile);
   const inProgress = myGames.filter((g) => (g.status || STATUS.IN_PROGRESS) === STATUS.IN_PROGRESS);
   const finished = myGames.filter((g) => (g.status || STATUS.IN_PROGRESS) !== STATUS.IN_PROGRESS);
-  const assignedToMe = upcoming.filter((g) => g.assigned_to === email);
-  const otherUpcoming = upcoming.filter((g) => g.assigned_to !== email);
 
   const teamMembers = profiles.filter((p) => teamMemberIds.includes(p.user_id));
   const weekRows = schedule
@@ -346,6 +361,7 @@ export default function Profile() {
       || (a.game_time || '').localeCompare(b.game_time || ''));
   const weekDraftCount = weekRows.filter((r) => !r.published).length;
   const weekHasPublished = weekRows.some((r) => r.published);
+  const myWeekRows = weekRows.filter((r) => r.assigned_to === email);
   const myScheduledUpcoming = schedule.filter((r) =>
     r.assigned_to === email && r.published && (r.game_date || '') >= todayStr()).length;
 
@@ -436,28 +452,64 @@ export default function Profile() {
           {/* Teams */}
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Teams</h2>
-            {myTeams.length > 0 && (
-              <div className={styles.teamChips}>
-                {myTeams.map((t) => (
-                  <span key={t.id} className={styles.teamChip}>{t.name}</span>
-                ))}
-              </div>
+            {myTeams.length > 0 ? (
+              <>
+                <div className={styles.teamChips}>
+                  {myTeams.map((t) => (
+                    <span key={t.id} className={styles.teamChip}>{t.name}</span>
+                  ))}
+                </div>
+                {teamMembers.length > 0 && (
+                  <div className={styles.memberBlock}>
+                    <span className={styles.fieldLabel}>Members ({teamMembers.length})</span>
+                    <div className={styles.memberChips}>
+                      {teamMembers.map((m) => (
+                        <span key={m.user_id} className={styles.memberChip} title={m.email}>
+                          {m.username || m.email}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {showJoin ? (
+                  <form onSubmit={handleJoinTeam}>
+                    <div className={styles.inlineInputs}>
+                      <input
+                        type="text"
+                        className={styles.input}
+                        placeholder="Team code"
+                        value={teamCode}
+                        onChange={(e) => setTeamCode(e.target.value)}
+                      />
+                      <button type="submit" className={styles.primaryBtn} disabled={joining || !teamCode}>
+                        {joining ? 'Joining…' : 'Join'}
+                      </button>
+                    </div>
+                    <p className={styles.hint}>Enter another team's code to join it.</p>
+                  </form>
+                ) : (
+                  <button type="button" className={styles.linkBtn} onClick={() => setShowJoin(true)}>
+                    Change team
+                  </button>
+                )}
+              </>
+            ) : (
+              <form onSubmit={handleJoinTeam}>
+                <div className={styles.inlineInputs}>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="Team code"
+                    value={teamCode}
+                    onChange={(e) => setTeamCode(e.target.value)}
+                  />
+                  <button type="submit" className={styles.primaryBtn} disabled={joining || !teamCode}>
+                    {joining ? 'Joining…' : 'Join'}
+                  </button>
+                </div>
+                <p className={styles.hint}>Enter a team code to join. Members appear in that team's assignment list.</p>
+              </form>
             )}
-            <form onSubmit={handleJoinTeam}>
-              <div className={styles.inlineInputs}>
-                <input
-                  type="text"
-                  className={styles.input}
-                  placeholder="Team code"
-                  value={teamCode}
-                  onChange={(e) => setTeamCode(e.target.value)}
-                />
-                <button type="submit" className={styles.primaryBtn} disabled={joining || !teamCode}>
-                  {joining ? 'Joining…' : 'Join'}
-                </button>
-              </div>
-              <p className={styles.hint}>Enter a team code to join. Members appear in that team's assignment list.</p>
-            </form>
           </section>
 
           {/* Password */}
@@ -628,20 +680,12 @@ export default function Profile() {
                 )}
               </>
             )}
-            <h3 className={styles.groupTitle}>Assigned to you</h3>
-            {assignedToMe.length === 0 ? (
-              <p className={styles.empty}>No upcoming games assigned to you.</p>
+            <h3 className={styles.groupTitle}>Assigned to you this week</h3>
+            {myWeekRows.length === 0 ? (
+              <p className={styles.empty}>No games assigned to you this week.</p>
             ) : (
               <div className={`${styles.gameList} ${styles.gameListHighlight}`}>
-                {assignedToMe.map((g) => <GameRow key={g.id} game={g} profiles={profiles} showAssigned />)}
-              </div>
-            )}
-            <h3 className={styles.groupTitle}>All upcoming games</h3>
-            {otherUpcoming.length === 0 ? (
-              <p className={styles.empty}>No other upcoming games.</p>
-            ) : (
-              <div className={styles.gameList}>
-                {otherUpcoming.map((g) => <GameRow key={g.id} game={g} profiles={profiles} showAssigned />)}
+                {myWeekRows.map((r) => <ScheduleSummaryRow key={r.id} row={r} profiles={profiles} />)}
               </div>
             )}
           </div>
