@@ -160,6 +160,7 @@ export default function Dashboard() {
       <nav className={styles.nav}>
         <span className={styles.navBrand}>Guelph Royals Pitch Tracker</span>
         <div className={styles.navRight}>
+          <Link to="/schedule" className={styles.navLink}>Schedule</Link>
           {currentEmail && (
             <Link
               to="/profile"

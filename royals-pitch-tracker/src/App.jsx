@@ -8,6 +8,7 @@ import NewGame from './pages/NewGame';
 import LiveScoring from './pages/LiveScoring';
 import GameLog from './pages/GameLog';
 import Profile from './pages/Profile';
+import Schedule from './pages/Schedule';
 
 function ProtectedRoute({ children, session }) {
   if (session === undefined) return null;
@@ -63,6 +64,14 @@ export default function App() {
           element={
             <ProtectedRoute session={session}>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/schedule"
+          element={
+            <ProtectedRoute session={session}>
+              <Schedule />
             </ProtectedRoute>
           }
         />

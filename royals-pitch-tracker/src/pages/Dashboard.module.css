@@ -29,6 +29,17 @@
   font-size: 13px;
 }
 
+.navLink {
+  color: #cbd5e1;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navLink:hover {
+  color: white;
+}
+
 .profileBtn {
   position: relative;
   color: #cbd5e1;
