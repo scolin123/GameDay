@@ -168,7 +168,7 @@ export default function Profile() {
   const [teamMemberIds, setTeamMemberIds] = useState([]);
   const [teamCode, setTeamCode] = useState('');
   const [joining, setJoining] = useState(false);
-  const [showJoin, setShowJoin] = useState(false);
+  const [showTeamModal, setShowTeamModal] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(weekStart(todayStr()));
   const [publishing, setPublishing] = useState(false);
 
@@ -274,7 +274,7 @@ export default function Profile() {
       return;
     }
     setTeamCode('');
-    setShowJoin(false);
+    setShowTeamModal(false);
     const teams = await fetchMyTeams(user.id);
     setMyTeams(teams);
     if (teams[0]) setTeamMemberIds(await fetchTeamMemberIds(teams[0].id));
@@ -361,7 +361,7 @@ export default function Profile() {
       || (a.game_time || '').localeCompare(b.game_time || ''));
   const weekDraftCount = weekRows.filter((r) => !r.published).length;
   const weekHasPublished = weekRows.some((r) => r.published);
-  const myWeekRows = weekRows.filter((r) => r.assigned_to === email);
+  const myWeekRows = weekRows.filter((r) => r.assigned_to === email && r.published);
   const myScheduledUpcoming = schedule.filter((r) =>
     r.assigned_to === email && r.published && (r.game_date || '') >= todayStr()).length;
 
@@ -449,9 +449,9 @@ export default function Profile() {
             )}
           </section>
 
-          {/* Teams */}
+          {/* Team */}
           <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Teams</h2>
+            <h2 className={styles.cardTitle}>Team</h2>
             {myTeams.length > 0 ? (
               <>
                 <div className={styles.teamChips}>
@@ -471,44 +471,25 @@ export default function Profile() {
                     </div>
                   </div>
                 )}
-                {showJoin ? (
-                  <form onSubmit={handleJoinTeam}>
-                    <div className={styles.inlineInputs}>
-                      <input
-                        type="text"
-                        className={styles.input}
-                        placeholder="Team code"
-                        value={teamCode}
-                        onChange={(e) => setTeamCode(e.target.value)}
-                      />
-                      <button type="submit" className={styles.primaryBtn} disabled={joining || !teamCode}>
-                        {joining ? 'Joining…' : 'Join'}
-                      </button>
-                    </div>
-                    <p className={styles.hint}>Enter another team's code to join it.</p>
-                  </form>
-                ) : (
-                  <button type="button" className={styles.linkBtn} onClick={() => setShowJoin(true)}>
-                    Change team
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className={styles.linkBtn}
+                  onClick={() => { setTeamCode(''); setShowTeamModal(true); }}
+                >
+                  Change team
+                </button>
               </>
             ) : (
-              <form onSubmit={handleJoinTeam}>
-                <div className={styles.inlineInputs}>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    placeholder="Team code"
-                    value={teamCode}
-                    onChange={(e) => setTeamCode(e.target.value)}
-                  />
-                  <button type="submit" className={styles.primaryBtn} disabled={joining || !teamCode}>
-                    {joining ? 'Joining…' : 'Join'}
-                  </button>
-                </div>
-                <p className={styles.hint}>Enter a team code to join. Members appear in that team's assignment list.</p>
-              </form>
+              <>
+                <p className={styles.hint}>You're not on a team yet.</p>
+                <button
+                  type="button"
+                  className={styles.primaryBtn}
+                  onClick={() => { setTeamCode(''); setShowTeamModal(true); }}
+                >
+                  Join a team
+                </button>
+              </>
             )}
           </section>
 
@@ -691,6 +672,38 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {showTeamModal && (
+        <div className={styles.modalOverlay} onClick={() => !joining && setShowTeamModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>{myTeams.length > 0 ? 'Change team' : 'Join a team'}</h2>
+            <p className={styles.modalBody}>Enter a team code to join. You'll appear in that team's assignment list.</p>
+            <form onSubmit={handleJoinTeam}>
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="Team code"
+                value={teamCode}
+                autoFocus
+                onChange={(e) => setTeamCode(e.target.value)}
+              />
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.modalCancelBtn}
+                  onClick={() => setShowTeamModal(false)}
+                  disabled={joining}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className={styles.primaryBtn} disabled={joining || !teamCode.trim()}>
+                  {joining ? 'Joining…' : 'Join'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <Toast message={toast} onClose={() => setToast('')} />
     </div>
