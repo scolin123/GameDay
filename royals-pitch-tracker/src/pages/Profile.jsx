@@ -28,8 +28,10 @@ function formatDate(d) {
   });
 }
 
-function GameRow({ game, profiles, showAssigned }) {
-  const status = game.status || STATUS.IN_PROGRESS;
+function GameRow({ game, profiles, showAssigned, isAdmin }) {
+  const rawStatus = game.status || STATUS.IN_PROGRESS;
+  // Non-admins see uploaded games simply as "Completed" (green)
+  const status = (!isAdmin && rawStatus === STATUS.COMPLETED_UPLOADED) ? STATUS.COMPLETED : rawStatus;
   return (
     <div className={styles.gameRow}>
       <span className={styles.gameDate}>{formatDate(game.date)}</span>
@@ -155,10 +157,8 @@ export default function Profile() {
   const [theme, setThemeState] = useState(getTheme());
   const [adminCode, setAdminCode] = useState('');
   const [unlocking, setUnlocking] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [changingPassword, setChangingPassword] = useState(false);
   const [tab, setTab] = useState('games');
+  const [gamesTab, setGamesTab] = useState('assigned');
   const [myGames, setMyGames] = useState([]);
   const [schedule, setSchedule] = useState([]);
   const [scheduleMissing, setScheduleMissing] = useState(false);
@@ -245,24 +245,6 @@ export default function Profile() {
       setAdminCode('');
       setToast('Admin access unlocked');
     }
-  }
-
-  async function handleChangePassword(e) {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setToast('Passwords do not match');
-      return;
-    }
-    setChangingPassword(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setChangingPassword(false);
-    if (error) {
-      setToast(error.message);
-      return;
-    }
-    setNewPassword('');
-    setConfirmPassword('');
-    setToast('Password updated');
   }
 
   async function handleJoinTeam(e) {
@@ -367,6 +349,12 @@ export default function Profile() {
   const myWeekRows = weekRows.filter((r) => r.assigned_to === email && r.published);
   const myScheduledUpcoming = schedule.filter((r) =>
     r.assigned_to === email && r.published && (r.game_date || '') >= todayStr()).length;
+  // My Games → Assigned tab: published schedule games assigned to me, chronological
+  const myAssigned = schedule
+    .filter((r) => r.assigned_to === email && r.published)
+    .sort((a, b) =>
+      (a.game_date || '').localeCompare(b.game_date || '')
+      || (a.game_time || '').localeCompare(b.game_time || ''));
 
   return (
     <div className={styles.page}>
@@ -496,33 +484,7 @@ export default function Profile() {
             )}
           </section>
 
-          {/* Password */}
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Reset Password</h2>
-            <form onSubmit={handleChangePassword} className={styles.stackForm}>
-              <input
-                type="password"
-                className={styles.input}
-                placeholder="New password"
-                value={newPassword}
-                minLength={6}
-                required
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-              <input
-                type="password"
-                className={styles.input}
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                minLength={6}
-                required
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-              <button type="submit" className={styles.primaryBtn} disabled={changingPassword}>
-                {changingPassword ? 'Updating…' : 'Update Password'}
-              </button>
-            </form>
-          </section>
+          {/* Password reset hidden for now */}
         </div>
 
         {/* Tabs */}
@@ -547,21 +509,54 @@ export default function Profile() {
           <p className={styles.loading}>Loading games…</p>
         ) : tab === 'games' ? (
           <div className={styles.tabContent}>
-            <h3 className={styles.groupTitle}>In Progress — finish these</h3>
-            {inProgress.length === 0 ? (
-              <p className={styles.empty}>Nothing in progress. All caught up!</p>
+            <div className={styles.subTabBar}>
+              <button
+                type="button"
+                className={`${styles.subTabBtn} ${gamesTab === 'assigned' ? styles.subTabBtnActive : ''}`}
+                onClick={() => setGamesTab('assigned')}
+              >
+                Assigned{myAssigned.length > 0 ? ` (${myAssigned.length})` : ''}
+              </button>
+              <button
+                type="button"
+                className={`${styles.subTabBtn} ${gamesTab === 'inProgress' ? styles.subTabBtnActive : ''}`}
+                onClick={() => setGamesTab('inProgress')}
+              >
+                In Progress{inProgress.length > 0 ? ` (${inProgress.length})` : ''}
+              </button>
+              <button
+                type="button"
+                className={`${styles.subTabBtn} ${gamesTab === 'completed' ? styles.subTabBtnActive : ''}`}
+                onClick={() => setGamesTab('completed')}
+              >
+                Completed{finished.length > 0 ? ` (${finished.length})` : ''}
+              </button>
+            </div>
+
+            {gamesTab === 'assigned' ? (
+              myAssigned.length === 0 ? (
+                <p className={styles.empty}>No games assigned to you.</p>
+              ) : (
+                <div className={styles.gameList}>
+                  {myAssigned.map((r) => <ScheduleSummaryRow key={r.id} row={r} profiles={profiles} />)}
+                </div>
+              )
+            ) : gamesTab === 'inProgress' ? (
+              inProgress.length === 0 ? (
+                <p className={styles.empty}>Nothing in progress. All caught up!</p>
+              ) : (
+                <div className={`${styles.gameList} ${styles.gameListHighlight}`}>
+                  {inProgress.map((g) => <GameRow key={g.id} game={g} profiles={profiles} isAdmin={isAdmin} />)}
+                </div>
+              )
             ) : (
-              <div className={`${styles.gameList} ${styles.gameListHighlight}`}>
-                {inProgress.map((g) => <GameRow key={g.id} game={g} profiles={profiles} />)}
-              </div>
-            )}
-            <h3 className={styles.groupTitle}>Completed</h3>
-            {finished.length === 0 ? (
-              <p className={styles.empty}>No completed games yet.</p>
-            ) : (
-              <div className={styles.gameList}>
-                {finished.map((g) => <GameRow key={g.id} game={g} profiles={profiles} />)}
-              </div>
+              finished.length === 0 ? (
+                <p className={styles.empty}>No completed games yet.</p>
+              ) : (
+                <div className={styles.gameList}>
+                  {finished.map((g) => <GameRow key={g.id} game={g} profiles={profiles} isAdmin={isAdmin} />)}
+                </div>
+              )
             )}
           </div>
         ) : (

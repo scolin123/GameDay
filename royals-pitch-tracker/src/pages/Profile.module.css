@@ -210,6 +210,38 @@
   border-bottom-color: var(--accent);
 }
 
+.subTabBar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.subTabBtn {
+  padding: 5px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.subTabBtn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.subTabBtnActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.subTabBtnActive:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 .tabContent {
   display: flex;
   flex-direction: column;
