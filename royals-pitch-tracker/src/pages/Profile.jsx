@@ -180,7 +180,10 @@ export default function Profile() {
     setUsername(prof?.username || '');
 
     const [{ data: mine }, allProfiles, { data: sheet, error: sheetErr }, teams] = await Promise.all([
-      supabase.from('games').select('*').eq('logged_by', user.email).order('date', { ascending: false }),
+      // Games I logged OR am assigned to
+      supabase.from('games').select('*')
+        .or(`logged_by.eq.${user.email},assigned_to.eq.${user.email}`)
+        .order('date', { ascending: false }),
       fetchProfiles(),
       supabase.from('scheduled_games').select('*')
         .order('game_date', { ascending: true })
