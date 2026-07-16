@@ -151,7 +151,7 @@ export default function Schedule() {
   const [email, setEmail] = useState('');
   const [profile, setProfile] = useState(null);
   const [profiles, setProfiles] = useState([]);
-  const [tab, setTab] = useState('schedule');
+  const [tab, setTab] = useState('games');
   const [gamesTab, setGamesTab] = useState('assigned');
   const [myGames, setMyGames] = useState([]);
   const [schedule, setSchedule] = useState([]);
