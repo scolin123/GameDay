@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { ensureProfile, fetchProfiles, isAdminUser } from '../lib/profile';
 import styles from './NewGame.module.css';
 
 const EMPTY_BATTER = () => ({ player_name: '', player_role: 'Batter', bats: '', throws: '', batting_order: '' });
@@ -81,8 +82,18 @@ export default function NewGame() {
     home_team: '',
     away_team: '',
   });
+  const [assignedTo, setAssignedTo] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [profiles, setProfiles] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    ensureProfile().then(({ user, profile }) => {
+      setIsAdmin(isAdminUser(user?.email || '', profile));
+    });
+    fetchProfiles().then(setProfiles);
+  }, []);
 
   const [rosters, setRosters] = useState({
     home: [EMPTY_BATTER()],
@@ -104,9 +115,11 @@ export default function NewGame() {
     }
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
+    const payload = { ...gameInfo, user_id: user.id, logged_by: user.email };
+    if (assignedTo) payload.assigned_to = assignedTo;
     const { data, error: err } = await supabase
       .from('games')
-      .insert({ ...gameInfo, user_id: user.id, logged_by: user.email })
+      .insert(payload)
       .select()
       .single();
     if (err) {
@@ -227,6 +240,22 @@ export default function NewGame() {
                   required
                 />
               </div>
+              {isAdmin && profiles.length > 0 && (
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="assigned_to">Assign To (optional)</label>
+                  <select
+                    id="assigned_to"
+                    className={styles.input}
+                    value={assignedTo}
+                    onChange={(e) => setAssignedTo(e.target.value)}
+                  >
+                    <option value="">—</option>
+                    {profiles.map((p) => (
+                      <option key={p.user_id} value={p.email}>{p.username || p.email}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {error && <p className={styles.error}>{error}</p>}
               <div className={styles.formActions}>
                 <button type="submit" className={styles.primaryBtn} disabled={loading}>

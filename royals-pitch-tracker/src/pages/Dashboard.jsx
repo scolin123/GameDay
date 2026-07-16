@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { STATUS, STATUS_LABEL, STATUS_COLOR } from '../lib/gameStatus';
+import { ensureProfile, fetchProfiles, isAdminUser, displayName } from '../lib/profile';
 import GameCard from '../components/GameCard';
 import Toast from '../components/Toast';
 import styles from './Dashboard.module.css';
@@ -9,23 +10,39 @@ import deleteStyles from './DeleteConfirmModal.module.css';
 
 const FILTER_STATUSES = [STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.COMPLETED_UPLOADED];
 
-const ADMIN_EMAILS = ['colin@gordshier.com', 'colin@shier.ca', 'christiansturgeon06@gmail.com'];
-
 export default function Dashboard() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
   const [currentEmail, setCurrentEmail] = useState('');
+  const [myProfile, setMyProfile] = useState(null);
+  const [profiles, setProfiles] = useState([]);
   const [sortBy, setSortBy] = useState('date');
   const [sortAsc, setSortAsc] = useState(false);
   const [statusFilter, setStatusFilter] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [myScheduledCount, setMyScheduledCount] = useState(0);
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    ensureProfile().then(({ user, profile }) => {
       setCurrentEmail(user?.email || '');
+      setMyProfile(profile);
+      const myEmail = (user?.email || '').toLowerCase();
+      if (!myEmail) return;
+      const today = new Date().toISOString().split('T')[0];
+      // Only published schedule rows ping the assignee
+      supabase.from('scheduled_games')
+        .select('assigned_to')
+        .eq('published', true)
+        .gte('game_date', today)
+        .then(({ data }) => {
+          if (!data) return;
+          setMyScheduledCount(data.filter((r) => (r.assigned_to || '').toLowerCase() === myEmail).length);
+        });
     });
+    fetchProfiles().then(setProfiles);
     loadGames();
   }, []);
 
@@ -142,12 +159,35 @@ export default function Dashboard() {
     await supabase.auth.signOut();
   }
 
+  const isAdmin = isAdminUser(currentEmail, myProfile);
+
+  // Notification badge: my unfinished games + upcoming games assigned to me
+  const todayStr = new Date().toISOString().split('T')[0];
+  const pendingCount = currentEmail
+    ? games.filter((g) => g.logged_by === currentEmail
+        && (g.status || STATUS.IN_PROGRESS) === STATUS.IN_PROGRESS).length
+    : 0;
+  const assignedUpcomingCount = currentEmail
+    ? games.filter((g) => g.assigned_to === currentEmail && (g.date || '') >= todayStr).length
+    : 0;
+  const notifCount = pendingCount + assignedUpcomingCount + myScheduledCount;
+
   return (
     <div className={styles.page}>
       <nav className={styles.nav}>
         <span className={styles.navBrand}>Guelph Royals Pitch Tracker</span>
         <div className={styles.navRight}>
-          {currentEmail && <span className={styles.navEmail}>{currentEmail}</span>}
+          <Link to="/schedule" className={styles.navLink}>Schedule</Link>
+          {currentEmail && (
+            <Link
+              to="/profile"
+              className={styles.profileBtn}
+              title={notifCount > 0 ? `${pendingCount} game${pendingCount === 1 ? '' : 's'} to finish, ${assignedUpcomingCount + myScheduledCount} upcoming assigned to you` : undefined}
+            >
+              {displayName(currentEmail, profiles) || currentEmail}
+              {notifCount > 0 && <span className={styles.notifBadge}>{notifCount}</span>}
+            </Link>
+          )}
           <button type="button" onClick={handleSignOut} className={styles.signOut}>
             Sign Out
           </button>
@@ -160,7 +200,7 @@ export default function Dashboard() {
           <Link to="/games/new" className={styles.newGameBtn}>New Game</Link>
         </div>
 
-        {ADMIN_EMAILS.includes(currentEmail) && (
+        {isAdmin && (
           <div className={styles.filterRow}>
             <button
               type="button"
@@ -207,7 +247,7 @@ export default function Dashboard() {
                   <th className={styles.numHeader}>Pitches</th>
                   <th className={styles.numHeader}>Innings</th>
                   <th className={styles.actionsHeader}>Actions</th>
-                  {ADMIN_EMAILS.includes(currentEmail) && (
+                  {isAdmin && (
                     <th className={styles.statusHeader}>Status</th>
                   )}
                 </tr>
@@ -218,9 +258,10 @@ export default function Dashboard() {
                     key={g.id}
                     game={g}
                     currentEmail={currentEmail}
+                    profiles={profiles}
                     onStatusChange={handleStatusChange}
                     onDateChange={handleDateChange}
-                    isAdmin={ADMIN_EMAILS.includes(currentEmail)}
+                    isAdmin={isAdmin}
                     onDeleteRequest={setDeleteTarget}
                     onError={setToast}
                   />

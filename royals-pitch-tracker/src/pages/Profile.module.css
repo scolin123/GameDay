@@ -1,0 +1,678 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg-base);
+}
+
+.nav {
+  background: var(--bg-nav);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  height: 48px;
+  gap: 16px;
+}
+
+.backLink {
+  color: #94a3b8;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.backLink:hover {
+  color: white;
+}
+
+.navTitle {
+  flex: 1;
+  text-align: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.signOut {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.signOut:hover {
+  color: white;
+}
+
+.content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.contentWide {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.cardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.fieldRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.fieldValue {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.inlineForm {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inlineInputs {
+  display: flex;
+  gap: 8px;
+}
+
+.stackForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.stackForm .input {
+  width: 100%;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.primaryBtn {
+  padding: 6px 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.themeToggle {
+  display: flex;
+  gap: 8px;
+}
+
+.themeBtn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+}
+
+.themeBtn:hover {
+  border-color: var(--accent);
+}
+
+.themeBtnActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.adminActive {
+  color: var(--color-success);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.tabBar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.tabBtn {
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tabBtn:hover {
+  color: var(--text-primary);
+}
+
+.tabBtnActive {
+  color: var(--accent);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+.subTabBar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.subTabBtn {
+  padding: 5px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.subTabBtn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.subTabBtnActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.subTabBtnActive:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupTitle {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+.gameList {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.gameListHighlight {
+  border-color: var(--color-warning);
+}
+
+.gameRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.gameRow:last-child {
+  border-bottom: none;
+}
+
+.gameDate {
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+  min-width: 150px;
+}
+
+.gameMatchup {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.gameAssigned {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.statusChip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.gameActions {
+  display: flex;
+  gap: 6px;
+}
+
+.gameActionBtn {
+  padding: 4px 10px;
+  font-size: 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.gameActionBtn:hover {
+  background: var(--bg-elevated);
+}
+
+.loading,
+.empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 4px 0;
+}
+
+/* League schedule sheet */
+.sheetWrap {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.sheet {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-surface);
+}
+
+.sheetTh {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.sheetRow {
+  border-bottom: 1px solid var(--border);
+}
+
+.sheetRow:last-child {
+  border-bottom: none;
+}
+
+.sheetCell {
+  padding: 6px 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.sheetInput {
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  width: 100%;
+  min-width: 90px;
+}
+
+.sheetTimeInput {
+  min-width: 60px;
+  max-width: 80px;
+}
+
+.sheetInputPlain,
+.sheetInputPlain:hover,
+.sheetInputPlain:focus {
+  border-color: transparent;
+  background: transparent;
+  outline: none;
+}
+
+.sheetInput:hover,
+.sheetInput:focus {
+  border-color: var(--border-strong);
+  background: var(--bg-surface);
+  outline: none;
+}
+
+.sheetSelect {
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  max-width: 240px;
+}
+
+.sheetSelect:hover,
+.sheetSelect:focus {
+  border-color: var(--border-strong);
+  background: var(--bg-surface);
+  outline: none;
+}
+
+.sheetDeleteCell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stateChip {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.stateChipDraft {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+}
+
+.stateChipPublished {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.sheetDeleteBtn {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.sheetDeleteBtn:hover {
+  color: var(--color-danger);
+  background: var(--bg-elevated);
+}
+
+.sheetActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.addRowBtn {
+  padding: 6px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.addRowBtn:hover {
+  background: var(--bg-elevated);
+}
+
+.publishBtn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.publishBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.publishBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Week navigation */
+.weekNav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.weekNavBtn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.weekNavBtn:hover {
+  background: var(--bg-elevated);
+}
+
+.weekLabel {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.weekLabelTitle {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.weekLabelSub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.thisWeekBtn {
+  margin-left: auto;
+  padding: 5px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.thisWeekBtn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+/* Team chips */
+.teamChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.teamChip {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.memberBlock {
+  margin-bottom: 12px;
+}
+
+.memberChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.memberChip {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 13px;
+  border: 1px solid var(--border);
+}
+
+.linkBtn {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0;
+}
+
+.linkBtn:hover {
+  text-decoration: underline;
+}
+
+/* Team modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+.modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.3);
+}
+
+.modalTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.modalBody {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+.modal .input {
+  width: 100%;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.modalCancelBtn {
+  padding: 6px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.modalCancelBtn:hover {
+  background: var(--bg-elevated);
+}

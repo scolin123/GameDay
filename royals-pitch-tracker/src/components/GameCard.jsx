@@ -2,11 +2,12 @@ import { Link } from 'react-router-dom';
 import { exportGameCsv } from '../lib/exportCsv';
 import { supabase } from '../lib/supabase';
 import { STATUS, STATUS_LABEL, STATUS_COLOR } from '../lib/gameStatus';
+import { displayName } from '../lib/profile';
 import styles from './GameCard.module.css';
 
 const STATUS_ORDER = [STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.COMPLETED_UPLOADED];
 
-export default function GameCard({ game, currentEmail, onStatusChange, onDateChange, isAdmin, onDeleteRequest, onError }) {
+export default function GameCard({ game, currentEmail, profiles, onStatusChange, onDateChange, isAdmin, onDeleteRequest, onError }) {
   const status = game.status || STATUS.IN_PROGRESS;
 
   async function handleDateChange(newDate) {
@@ -42,8 +43,8 @@ export default function GameCard({ game, currentEmail, onStatusChange, onDateCha
       <td className={styles.loggedBy}>
         {game.logged_by
           ? game.logged_by === currentEmail
-            ? <span className={styles.loggedByYou}>{currentEmail}</span>
-            : game.logged_by.split('@')[0]
+            ? <span className={styles.loggedByYou} title={currentEmail}>{displayName(currentEmail, profiles)}</span>
+            : <span title={game.logged_by}>{displayName(game.logged_by, profiles).split('@')[0]}</span>
           : <span className={styles.loggedByNone}>—</span>}
       </td>
       <td className={styles.num}>{game.pitch_count ?? '—'}</td>
