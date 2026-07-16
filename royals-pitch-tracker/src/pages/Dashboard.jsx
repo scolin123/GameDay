@@ -24,6 +24,8 @@ export default function Dashboard() {
   const [deleting, setDeleting] = useState(false);
 
   const [myScheduledCount, setMyScheduledCount] = useState(0);
+  const [notifSeen, setNotifSeen] = useState(() =>
+    parseInt(localStorage.getItem('rpt-notif-seen') || '0', 10));
 
   useEffect(() => {
     ensureProfile().then(({ user, profile }) => {
@@ -171,21 +173,32 @@ export default function Dashboard() {
     ? games.filter((g) => g.assigned_to === currentEmail && (g.date || '') >= todayStr).length
     : 0;
   const notifCount = pendingCount + assignedUpcomingCount + myScheduledCount;
+  // Badge shows only when there's more than the user has already seen; clicking
+  // Schedule marks the current count as seen so it clears until something new.
+  const showNotif = notifCount > notifSeen;
+
+  function dismissNotif() {
+    localStorage.setItem('rpt-notif-seen', String(notifCount));
+    setNotifSeen(notifCount);
+  }
 
   return (
     <div className={styles.page}>
       <nav className={styles.nav}>
         <span className={styles.navBrand}>Guelph Royals Pitch Tracker</span>
         <div className={styles.navRight}>
-          <Link to="/schedule" className={styles.navLink}>Schedule</Link>
+          <Link
+            to="/schedule"
+            className={styles.navLink}
+            title={showNotif ? `${pendingCount} game${pendingCount === 1 ? '' : 's'} to finish, ${assignedUpcomingCount + myScheduledCount} upcoming assigned to you` : undefined}
+            onClick={() => { if (notifCount > 0) dismissNotif(); }}
+          >
+            Schedule
+            {showNotif && <span className={styles.notifBadge}>{notifCount}</span>}
+          </Link>
           {currentEmail && (
-            <Link
-              to="/profile"
-              className={styles.profileBtn}
-              title={notifCount > 0 ? `${pendingCount} game${pendingCount === 1 ? '' : 's'} to finish, ${assignedUpcomingCount + myScheduledCount} upcoming assigned to you` : undefined}
-            >
+            <Link to="/profile" className={styles.profileBtn}>
               {displayName(currentEmail, profiles) || currentEmail}
-              {notifCount > 0 && <span className={styles.notifBadge}>{notifCount}</span>}
             </Link>
           )}
           <button type="button" onClick={handleSignOut} className={styles.signOut}>

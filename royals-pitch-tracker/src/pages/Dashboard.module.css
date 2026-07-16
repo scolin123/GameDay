@@ -30,6 +30,7 @@
 }
 
 .navLink {
+  position: relative;
   color: #cbd5e1;
   font-size: 13px;
   text-decoration: none;
