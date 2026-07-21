@@ -19,14 +19,6 @@ function formatUpcomingDate(d) {
   });
 }
 
-// MM/DD/YYYY, matching how the started games render their date column
-function formatCurrentDate(d) {
-  if (!d) return '—';
-  return new Date(`${String(d).slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-US', {
-    month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'UTC',
-  });
-}
-
 // Published schedule games still in the future. Read-only on purpose: a game
 // can't be set up or scored until its date arrives, at which point it drops
 // into the Current table below and picks up a Set Up & Score action there.
@@ -62,11 +54,18 @@ function UpcomingTable({ rows, profiles }) {
 // A scheduled game whose date has arrived but that nobody has set up yet. Sits
 // in the Current table alongside real games so it doesn't just disappear once
 // it drops out of Upcoming.
-function PendingGameRow({ row, isAdmin, currentEmail, profiles, onSetUp }) {
+function PendingGameRow({ row, isAdmin, currentEmail, profiles, onSetUp, onDateChange }) {
   const assignedToMe = row.assigned_to && row.assigned_to === currentEmail;
   return (
     <tr className={gc.row}>
-      <td className={gc.date}>{formatCurrentDate(row.game_date)}</td>
+      <td className={gc.date}>
+        <input
+          type="date"
+          className={gc.dateInput}
+          value={(row.game_date || '').slice(0, 10)}
+          onChange={(e) => e.target.value && onDateChange(row.id, e.target.value)}
+        />
+      </td>
       <td className={gc.matchup}>{row.away_team || '—'} @ {row.home_team || '—'}</td>
       <td className={gc.loggedBy}>
         {row.assigned_to ? (
@@ -93,7 +92,8 @@ function PendingGameRow({ row, isAdmin, currentEmail, profiles, onSetUp }) {
 }
 
 function GamesTable({ games, sortBy, sortAsc, onSort, isAdmin, currentEmail, profiles,
-                      onStatusChange, onDateChange, onDeleteRequest, onError, onSetUp }) {
+                      onStatusChange, onDateChange, onDeleteRequest, onError, onSetUp,
+                      onScheduledDateChange }) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
@@ -121,6 +121,7 @@ function GamesTable({ games, sortBy, sortAsc, onSort, isAdmin, currentEmail, pro
               currentEmail={currentEmail}
               profiles={profiles}
               onSetUp={onSetUp}
+              onDateChange={onScheduledDateChange}
             />
           ) : (
             <GameCard
@@ -274,6 +275,21 @@ export default function Dashboard() {
 
   function handleDateChange(id, newDate) {
     setGames((prev) => prev.map((g) => g.id === id ? { ...g, date: newDate } : g));
+  }
+
+  // Editing a pending game's date writes back to the schedule row it came from.
+  // Moving it to a future date re-files it under Upcoming on the next render.
+  async function handleScheduledDateChange(id, newDate) {
+    if (!newDate) return;
+    const { error } = await supabase
+      .from('scheduled_games')
+      .update({ game_date: newDate })
+      .eq('id', id);
+    if (error) {
+      setToast(error.message);
+      return;
+    }
+    setScheduledRows((prev) => prev.map((r) => r.id === id ? { ...r, game_date: newDate } : r));
   }
 
   async function handleDeleteConfirm() {
@@ -446,6 +462,7 @@ export default function Dashboard() {
                 <GamesTable
                   games={currentItems}
                   onSetUp={handleSetUpUpcoming}
+                  onScheduledDateChange={handleScheduledDateChange}
                   sortBy={sortBy}
                   sortAsc={sortAsc}
                   onSort={handleSort}
