@@ -59,13 +59,15 @@ export default function GameCard({ game, currentEmail, profiles, onStatusChange,
         >
           Export CSV
         </button>
-        <button
-          type="button"
-          className={`${styles.actionBtn} ${styles.deleteBtnInline}`}
-          onClick={() => onDeleteRequest(game)}
-        >
-          Delete
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            className={`${styles.actionBtn} ${styles.deleteBtnInline}`}
+            onClick={() => onDeleteRequest(game)}
+          >
+            Delete
+          </button>
+        )}
       </td>
       {isAdmin && (
         <td className={styles.statusCell}>

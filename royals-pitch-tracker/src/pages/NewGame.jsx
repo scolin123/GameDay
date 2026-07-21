@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ensureProfile, fetchProfiles, isAdminUser } from '../lib/profile';
+import { todayStr } from '../lib/week';
 import styles from './NewGame.module.css';
 
 const EMPTY_BATTER = () => ({ player_name: '', player_role: 'Batter', bats: '', throws: '', batting_order: '' });
@@ -75,25 +75,20 @@ function RosterPanel({ team, label, players, tab, onChange, onAdd, onRemove }) {
 
 export default function NewGame() {
   const navigate = useNavigate();
+  // Set here when arriving from an Upcoming row on the dashboard
+  const prefill = useLocation().state?.prefill;
   const [step, setStep] = useState(1);
   const [gameId, setGameId] = useState(null);
   const [gameInfo, setGameInfo] = useState({
-    date: new Date().toISOString().split('T')[0],
-    home_team: '',
-    away_team: '',
+    date: prefill?.date || todayStr(),
+    home_team: prefill?.home_team || '',
+    away_team: prefill?.away_team || '',
   });
-  const [assignedTo, setAssignedTo] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [profiles, setProfiles] = useState([]);
+  // Assignment is set by an admin on the schedule, not here — this only carries
+  // through the assignee of the scheduled game this was set up from.
+  const assignedTo = prefill?.assigned_to || '';
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    ensureProfile().then(({ user, profile }) => {
-      setIsAdmin(isAdminUser(user?.email || '', profile));
-    });
-    fetchProfiles().then(setProfiles);
-  }, []);
 
   const [rosters, setRosters] = useState({
     home: [EMPTY_BATTER()],
@@ -196,7 +191,10 @@ export default function NewGame() {
   return (
     <div className={styles.page}>
       <nav className={styles.nav}>
-        <span className={styles.navBrand}>Guelph Royals Pitch Tracker</span>
+        <div className={styles.navLeft}>
+          <Link to="/" className={styles.backLink}>← Games</Link>
+          <span className={styles.navBrand}>Guelph Royals Pitch Tracker</span>
+        </div>
         <button type="button" onClick={() => supabase.auth.signOut()} className={styles.signOut}>
           Sign Out
         </button>
@@ -240,22 +238,6 @@ export default function NewGame() {
                   required
                 />
               </div>
-              {isAdmin && profiles.length > 0 && (
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="assigned_to">Assign To (optional)</label>
-                  <select
-                    id="assigned_to"
-                    className={styles.input}
-                    value={assignedTo}
-                    onChange={(e) => setAssignedTo(e.target.value)}
-                  >
-                    <option value="">—</option>
-                    {profiles.map((p) => (
-                      <option key={p.user_id} value={p.email}>{p.username || p.email}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
               {error && <p className={styles.error}>{error}</p>}
               <div className={styles.formActions}>
                 <button type="submit" className={styles.primaryBtn} disabled={loading}>

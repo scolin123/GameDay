@@ -120,6 +120,71 @@
   font-size: 14px;
 }
 
+.section + .section {
+  margin-top: 28px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sectionCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.upcomingRow td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.upcomingDate {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.upcomingTime,
+.upcomingAssigned {
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.upcomingBtn {
+  display: inline-block;
+  padding: 4px 10px;
+  margin-right: 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.upcomingBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .tableWrap {
   border: 1px solid var(--border);
   border-radius: 4px;
