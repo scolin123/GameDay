@@ -149,6 +149,12 @@
   letter-spacing: 0;
 }
 
+/* Assignee shown in the Logged By column when the game is assigned to you */
+.assignedYou {
+  font-weight: 600;
+  color: #ca8a04;
+}
+
 .upcomingRow td {
   padding: 10px 14px;
   border-top: 1px solid var(--border);

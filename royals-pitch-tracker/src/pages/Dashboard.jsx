@@ -7,6 +7,7 @@ import { todayStr } from '../lib/week';
 import GameCard from '../components/GameCard';
 import Toast from '../components/Toast';
 import styles from './Dashboard.module.css';
+import gc from '../components/GameCard.module.css';
 import deleteStyles from './DeleteConfirmModal.module.css';
 
 const FILTER_STATUSES = [STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.COMPLETED_UPLOADED];
@@ -15,6 +16,14 @@ function formatUpcomingDate(d) {
   if (!d) return '—';
   return new Date(`${String(d).slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
+  });
+}
+
+// MM/DD/YYYY, matching how the started games render their date column
+function formatCurrentDate(d) {
+  if (!d) return '—';
+  return new Date(`${String(d).slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-US', {
+    month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'UTC',
   });
 }
 
@@ -53,20 +62,32 @@ function UpcomingTable({ rows, profiles }) {
 // A scheduled game whose date has arrived but that nobody has set up yet. Sits
 // in the Current table alongside real games so it doesn't just disappear once
 // it drops out of Upcoming.
-function PendingGameRow({ row, isAdmin, onSetUp }) {
+function PendingGameRow({ row, isAdmin, currentEmail, profiles, onSetUp }) {
+  const assignedToMe = row.assigned_to && row.assigned_to === currentEmail;
   return (
-    <tr className={styles.upcomingRow}>
-      <td className={styles.upcomingDate}>{formatUpcomingDate(row.game_date)}</td>
-      <td className={styles.matchup}>{row.away_team || '—'} @ {row.home_team || '—'}</td>
-      <td className={styles.upcomingAssigned}>Not started</td>
-      <td className={styles.num}>—</td>
-      <td className={styles.num}>—</td>
-      <td className={styles.actions}>
-        <button type="button" className={styles.upcomingBtn} onClick={() => onSetUp(row)}>
+    <tr className={gc.row}>
+      <td className={gc.date}>{formatCurrentDate(row.game_date)}</td>
+      <td className={gc.matchup}>{row.away_team || '—'} @ {row.home_team || '—'}</td>
+      <td className={gc.loggedBy}>
+        {row.assigned_to ? (
+          <span
+            className={assignedToMe ? styles.assignedYou : undefined}
+            title={row.assigned_to}
+          >
+            {displayName(row.assigned_to, profiles)}
+          </span>
+        ) : (
+          <span className={gc.loggedByNone}>—</span>
+        )}
+      </td>
+      <td className={gc.num}>—</td>
+      <td className={gc.num}>—</td>
+      <td className={gc.actions}>
+        <button type="button" className={gc.actionBtn} onClick={() => onSetUp(row)}>
           Set Up &amp; Score
         </button>
       </td>
-      {isAdmin && <td />}
+      {isAdmin && <td className={gc.statusCell} />}
     </tr>
   );
 }
@@ -93,7 +114,14 @@ function GamesTable({ games, sortBy, sortAsc, onSort, isAdmin, currentEmail, pro
         </thead>
         <tbody>
           {games.map((g) => (g.__pending ? (
-            <PendingGameRow key={`p-${g.id}`} row={g} isAdmin={isAdmin} onSetUp={onSetUp} />
+            <PendingGameRow
+              key={`p-${g.id}`}
+              row={g}
+              isAdmin={isAdmin}
+              currentEmail={currentEmail}
+              profiles={profiles}
+              onSetUp={onSetUp}
+            />
           ) : (
             <GameCard
               key={g.id}
