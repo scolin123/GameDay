@@ -33,6 +33,12 @@ export function formatWeekLabel(weekStartStr) {
   return `${s} – ${e}`;
 }
 
+// Today as the user's *local* calendar date. Deliberately not UTC: game_date is
+// a date-only column, so "has this game passed?" has to be judged against the
+// day the user is actually living in. toISOString() would roll over to tomorrow
+// after 8pm Eastern and push the current week/day forward a day early.
 export function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

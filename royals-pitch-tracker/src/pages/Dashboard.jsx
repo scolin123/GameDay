@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { STATUS, STATUS_LABEL, STATUS_COLOR } from '../lib/gameStatus';
 import { ensureProfile, fetchProfiles, isAdminUser, displayName } from '../lib/profile';
+import { todayStr } from '../lib/week';
 import GameCard from '../components/GameCard';
 import Toast from '../components/Toast';
 import styles from './Dashboard.module.css';
@@ -10,7 +11,110 @@ import deleteStyles from './DeleteConfirmModal.module.css';
 
 const FILTER_STATUSES = [STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.COMPLETED_UPLOADED];
 
+function formatUpcomingDate(d) {
+  if (!d) return '—';
+  return new Date(`${String(d).slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
+  });
+}
+
+// Published schedule games still in the future. Read-only on purpose: a game
+// can't be set up or scored until its date arrives, at which point it drops
+// into the Current table below and picks up a Set Up & Score action there.
+function UpcomingTable({ rows, profiles }) {
+  return (
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Matchup</th>
+            <th>Assigned To</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id} className={styles.upcomingRow}>
+              <td className={styles.upcomingDate}>{formatUpcomingDate(r.game_date)}</td>
+              <td className={styles.upcomingTime}>{r.game_time || '—'}</td>
+              <td className={styles.matchup}>{r.away_team || '—'} @ {r.home_team || '—'}</td>
+              <td className={styles.upcomingAssigned}>
+                {r.assigned_to ? displayName(r.assigned_to, profiles) : '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// A scheduled game whose date has arrived but that nobody has set up yet. Sits
+// in the Current table alongside real games so it doesn't just disappear once
+// it drops out of Upcoming.
+function PendingGameRow({ row, isAdmin, onSetUp }) {
+  return (
+    <tr className={styles.upcomingRow}>
+      <td className={styles.upcomingDate}>{formatUpcomingDate(row.game_date)}</td>
+      <td className={styles.matchup}>{row.away_team || '—'} @ {row.home_team || '—'}</td>
+      <td className={styles.upcomingAssigned}>Not started</td>
+      <td className={styles.num}>—</td>
+      <td className={styles.num}>—</td>
+      <td className={styles.actions}>
+        <button type="button" className={styles.upcomingBtn} onClick={() => onSetUp(row)}>
+          Set Up &amp; Score
+        </button>
+      </td>
+      {isAdmin && <td />}
+    </tr>
+  );
+}
+
+function GamesTable({ games, sortBy, sortAsc, onSort, isAdmin, currentEmail, profiles,
+                      onStatusChange, onDateChange, onDeleteRequest, onError, onSetUp }) {
+  return (
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th className={styles.sortableHeader} onClick={() => onSort('date')}>
+              Date {sortBy === 'date' ? (sortAsc ? '↑' : '↓') : ''}
+            </th>
+            <th>Matchup</th>
+            <th className={styles.sortableHeader} onClick={() => onSort('logged_by')}>
+              Logged By {sortBy === 'logged_by' ? (sortAsc ? '↑' : '↓') : ''}
+            </th>
+            <th className={styles.numHeader}>Pitches</th>
+            <th className={styles.numHeader}>Innings</th>
+            <th className={styles.actionsHeader}>Actions</th>
+            {isAdmin && <th className={styles.statusHeader}>Status</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {games.map((g) => (g.__pending ? (
+            <PendingGameRow key={`p-${g.id}`} row={g} isAdmin={isAdmin} onSetUp={onSetUp} />
+          ) : (
+            <GameCard
+              key={g.id}
+              game={g}
+              currentEmail={currentEmail}
+              profiles={profiles}
+              onStatusChange={onStatusChange}
+              onDateChange={onDateChange}
+              isAdmin={isAdmin}
+              onDeleteRequest={onDeleteRequest}
+              onError={onError}
+            />
+          )))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
@@ -23,6 +127,7 @@ export default function Dashboard() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [scheduledRows, setScheduledRows] = useState([]);
   const [myScheduledCount, setMyScheduledCount] = useState(0);
   const [notifSeen, setNotifSeen] = useState(() =>
     parseInt(localStorage.getItem('rpt-notif-seen') || '0', 10));
@@ -33,15 +138,19 @@ export default function Dashboard() {
       setMyProfile(profile);
       const myEmail = (user?.email || '').toLowerCase();
       if (!myEmail) return;
-      const today = new Date().toISOString().split('T')[0];
-      // Only published schedule rows ping the assignee
+      const today = todayStr();
+      // Only published schedule rows are visible to non-admins and ping the assignee.
+      // Past rows are needed too: once a game's date arrives it moves down into
+      // the Current table, where it can finally be set up and scored.
       supabase.from('scheduled_games')
-        .select('assigned_to')
+        .select('*')
         .eq('published', true)
-        .gte('game_date', today)
+        .order('game_date', { ascending: true })
         .then(({ data }) => {
           if (!data) return;
-          setMyScheduledCount(data.filter((r) => (r.assigned_to || '').toLowerCase() === myEmail).length);
+          setScheduledRows(data);
+          setMyScheduledCount(data.filter((r) =>
+            (r.assigned_to || '').toLowerCase() === myEmail && (r.game_date || '') >= today).length);
         });
     });
     fetchProfiles().then(setProfiles);
@@ -107,6 +216,21 @@ export default function Dashboard() {
     setLoading(false);
   }
 
+  // Hand the schedule row to the normal New Game flow prefilled, rather than
+  // inserting a bare game row — scoring needs rosters set up first.
+  function handleSetUpUpcoming(row) {
+    navigate('/games/new', {
+      state: {
+        prefill: {
+          date: (row.game_date || '').slice(0, 10),
+          home_team: row.home_team || '',
+          away_team: row.away_team || '',
+          assigned_to: row.assigned_to || '',
+        },
+      },
+    });
+  }
+
   function handleSort(col) {
     if (sortBy === col) {
       setSortAsc((a) => !a);
@@ -164,14 +288,44 @@ export default function Dashboard() {
   const isAdmin = isAdminUser(currentEmail, myProfile);
 
   // Notification badge: my unfinished games + upcoming games assigned to me
-  const todayStr = new Date().toISOString().split('T')[0];
+  const today = todayStr();
   const pendingCount = currentEmail
     ? games.filter((g) => g.logged_by === currentEmail
         && (g.status || STATUS.IN_PROGRESS) === STATUS.IN_PROGRESS).length
     : 0;
   const assignedUpcomingCount = currentEmail
-    ? games.filter((g) => g.assigned_to === currentEmail && (g.date || '') >= todayStr).length
+    ? games.filter((g) => g.assigned_to === currentEmail && (g.date || '') >= today).length
     : 0;
+  // A scheduled game drops out of the schedule lists once a real game row
+  // exists for it, so it isn't offered for set-up twice.
+  const gameKeys = new Set(
+    games.map((g) => `${(g.date || '').slice(0, 10)}|${g.home_team}|${g.away_team}`)
+  );
+  const isSetUp = (r) => gameKeys.has(`${(r.game_date || '').slice(0, 10)}|${r.home_team}|${r.away_team}`);
+
+  const upcomingRows = scheduledRows.filter((r) => (r.game_date || '') > today && !isSetUp(r));
+  // Date has arrived but nobody has set the game up yet — these sit in Current
+  const pendingRows = scheduledRows
+    .filter((r) => (r.game_date || '') <= today && !isSetUp(r))
+    .map((r) => ({ ...r, __pending: true, date: r.game_date }));
+
+  // Pending rows have no status, so they drop out when a status filter is on.
+  // They also have no "logged by", so they only interleave under a date sort.
+  let currentItems;
+  if (statusFilter) {
+    currentItems = visibleGames;
+  } else if (sortBy === 'date') {
+    currentItems = [...visibleGames, ...pendingRows].sort((a, b) => {
+      const av = a.date || '';
+      const bv = b.date || '';
+      if (av < bv) return sortAsc ? -1 : 1;
+      if (av > bv) return sortAsc ? 1 : -1;
+      return 0;
+    });
+  } else {
+    currentItems = [...visibleGames, ...pendingRows];
+  }
+
   const notifCount = pendingCount + assignedUpcomingCount + myScheduledCount;
   // Badge shows only when there's more than the user has already seen; clicking
   // Schedule marks the current count as seen so it clears until something new.
@@ -241,47 +395,43 @@ export default function Dashboard() {
 
         {loading ? (
           <p className={styles.loading}>Loading...</p>
-        ) : games.length === 0 ? (
-          <p className={styles.empty}>No games yet. Create one above.</p>
-        ) : statusFilter && visibleGames.length === 0 ? (
-          <p className={styles.filterEmpty}>No {STATUS_LABEL[statusFilter].toLowerCase()} games.</p>
         ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.sortableHeader} onClick={() => handleSort('date')}>
-                    Date {sortBy === 'date' ? (sortAsc ? '↑' : '↓') : ''}
-                  </th>
-                  <th>Matchup</th>
-                  <th className={styles.sortableHeader} onClick={() => handleSort('logged_by')}>
-                    Logged By {sortBy === 'logged_by' ? (sortAsc ? '↑' : '↓') : ''}
-                  </th>
-                  <th className={styles.numHeader}>Pitches</th>
-                  <th className={styles.numHeader}>Innings</th>
-                  <th className={styles.actionsHeader}>Actions</th>
-                  {isAdmin && (
-                    <th className={styles.statusHeader}>Status</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {visibleGames.map((g) => (
-                  <GameCard
-                    key={g.id}
-                    game={g}
-                    currentEmail={currentEmail}
-                    profiles={profiles}
-                    onStatusChange={handleStatusChange}
-                    onDateChange={handleDateChange}
-                    isAdmin={isAdmin}
-                    onDeleteRequest={setDeleteTarget}
-                    onError={setToast}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {upcomingRows.length > 0 && (
+              <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>
+                  Upcoming <span className={styles.sectionCount}>{upcomingRows.length}</span>
+                </h2>
+                <UpcomingTable rows={upcomingRows} profiles={profiles} />
+              </section>
+            )}
+
+            <section className={styles.section}>
+              {upcomingRows.length > 0 && <h2 className={styles.sectionTitle}>Current</h2>}
+              {currentItems.length === 0 ? (
+                statusFilter ? (
+                  <p className={styles.filterEmpty}>No {STATUS_LABEL[statusFilter].toLowerCase()} games.</p>
+                ) : (
+                  <p className={styles.empty}>No games yet. Create one above.</p>
+                )
+              ) : (
+                <GamesTable
+                  games={currentItems}
+                  onSetUp={handleSetUpUpcoming}
+                  sortBy={sortBy}
+                  sortAsc={sortAsc}
+                  onSort={handleSort}
+                  isAdmin={isAdmin}
+                  currentEmail={currentEmail}
+                  profiles={profiles}
+                  onStatusChange={handleStatusChange}
+                  onDateChange={handleDateChange}
+                  onDeleteRequest={setDeleteTarget}
+                  onError={setToast}
+                />
+              )}
+            </section>
+          </>
         )}
       </div>
 
